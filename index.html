@@ -1,7 +1,13 @@
-<meta charset="UTF-8">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>音视频服务器</title>
     <style>
+        /* ==========================================
+           1. 全局与变量定义
+           ========================================== */
         :root {
             --bg-sidebar: #2b2d31; --bg-user-bar: #232428; --bg-main: #313338;
             --bg-chat-input: #383a40; --bg-hover: #3f4147;
@@ -18,7 +24,9 @@
         button { font-family: inherit; cursor: pointer; border: none; outline: none; }
         .app-layout { display: flex; width: 100%; height: 100%; }
 
-        /* 左侧边栏 */
+        /* ==========================================
+           2. 侧边栏 (频道与语音列表)
+           ========================================== */
         .sidebar { width: 260px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.2); }
         .server-header { height: 48px; padding: 0 16px; display: flex; align-items: center; font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid rgba(0,0,0,0.2); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .channel-list { flex: 1; overflow-y: auto; padding: 12px 8px; }
@@ -34,7 +42,9 @@
         .voice-user:hover { background: var(--bg-hover); color: var(--text-normal); }
         .voice-user .avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: bold; }
 
-        /* 底部状态栏与悬浮窗 */
+        /* ==========================================
+           3. 底部用户状态栏 (个人信息与设备控制)
+           ========================================== */
         .user-bar { height: 52px; background: var(--bg-user-bar); padding: 0 8px; display: flex; align-items: center; justify-content: space-between; }
         .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px; border-radius: 4px; }
         .user-info:hover { background: var(--bg-hover); }
@@ -50,7 +60,7 @@
         .icon-btn.muted { color: var(--danger); position: relative; }
         .icon-btn.muted::after { content: ''; position: absolute; width: 20px; height: 2px; background: var(--danger); transform: rotate(45deg); }
 
-        /* 🌟 修复后的悬浮面板：增加 z-index 和透明桥接层防止断层 */
+        /* 音量调节悬浮窗及桥接层(防止鼠标移出断层) */
         .hover-volume-popup {
             position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
             background: var(--bg-sidebar); padding: 12px; border-radius: 8px; 
@@ -58,7 +68,6 @@
             align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.05); 
             width: 140px; z-index: 9999;
         }
-        /* 桥接层：填补图标和弹窗之间的物理空隙 */
         .hover-volume-popup::before { content: ''; position: absolute; bottom: -15px; left: 0; width: 100%; height: 15px; background: transparent; }
         .hover-volume-popup::after {
             content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%) rotate(45deg);
@@ -67,7 +76,9 @@
         .icon-btn-wrapper:hover .hover-volume-popup { display: flex; }
         .vol-label { font-size: 0.8rem; color: var(--text-muted); }
 
-        /* 主体内容区 */
+        /* ==========================================
+           4. 主内容区 (顶栏、视频投屏、聊天室)
+           ========================================== */
         .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
         .top-bar { height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(0,0,0,0.2); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .top-bar input { background: var(--bg-chat-input); border: none; color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.9rem; outline: none; width: 220px; }
@@ -94,12 +105,16 @@
         .chat-input-wrapper { margin-top: 16px; background: var(--bg-chat-input); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; }
         .chat-input-wrapper input { background: transparent; border: none; color: white; font-size: 1rem; width: 100%; outline: none; }
 
+        /* ==========================================
+           5. 全局独立悬浮窗 (针对特定用户调音)
+           ========================================== */
         #personal-vol-popup {
             position: absolute; background: #111214; padding: 12px 16px; border-radius: 8px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.8); display: none; z-index: 10000;
             border: 1px solid rgba(255,255,255,0.1); color: white; flex-direction: column; gap: 8px;
         }
         
+        /* 统一样式：滑动条 */
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #4f545c; border-radius: 3px; outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: white; cursor: pointer; }
     </style>
@@ -161,19 +176,17 @@
                     <div style="background:var(--success); color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;">
                         🟢 频道活跃中
                     </div>
-                    
                     <div id="top-room-id" class="badge" onclick="copyRoomId()" style="cursor:pointer;" title="点击复制房间 ID">
                         房间 ID: 读取中...
                     </div>
-
                     <span style="font-size:0.9rem; color:var(--text-muted);">
                         在线节点: <span id="mesh-node-count" style="color:white; font-weight:bold;">1</span>
                     </span>
-                    
                     <button id="disconnect-btn" class="btn-danger" style="padding: 4px 10px; font-size: 0.85rem;" onclick="disconnectMesh()">断开</button>
                 </div>
 
                 <div style="flex:1"></div>
+                
                 <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2); margin: 0 8px;"></div>
                 <select id="video-quality" style="background:var(--bg-chat-input); color:white; border:none; padding:6px; border-radius:4px; outline:none; margin-right:8px;">
                     <option value="auto">画质: 自动</option>
@@ -189,6 +202,7 @@
                 <div class="video-wrapper" id="video-container" style="display:none;">
                     <video id="remote-video" autoplay playsinline controls></video>
                 </div>
+                
                 <div class="chat-area">
                     <div class="chat-history" id="chat-box">
                         <div style="text-align: center; color: var(--text-muted); margin-top: 20px;">
@@ -201,6 +215,7 @@
                     </div>
                 </div>
             </div>
+            
             <div id="audio-container" style="display:none;"></div>
         </main>
     </div>
@@ -209,8 +224,6 @@
         <span style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted);" id="personal-vol-name">调节音量</span>
         <input type="range" id="personal-vol-slider" min="0" max="1" step="0.05" value="1">
     </div>
-
-    <!-- <div id="audio-container" style="display: none;"></div> -->
 
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="main.js"></script>
