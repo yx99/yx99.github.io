@@ -140,6 +140,15 @@
         
         /* 有画面时隐藏占位符 */
         video[srcObject] + .video-placeholder { display: none; }
+
+        /* 停止投屏按钮专属红色样式 */
+        button.btn-danger {
+            background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+        }
+        button.btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(255, 65, 108, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -163,7 +172,8 @@
                 <option value="480p">省流 (480p, 15fps)</option>
             </select>
 
-            <button onclick="startShare()">🚀 发起屏幕共享</button>
+            <button id="share-btn" onclick="toggleShare()">🚀 发起屏幕共享</button>
+            <button id="hangup-btn" style="display:none;" onclick="hangUp()">❌ 断开连接</button>
         </div>
 
         <!-- 画面显示区 -->
