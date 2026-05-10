@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>d1zn 的极客投屏</title>
+    <style>
+        /* 全局现代暗黑风格 */
+        :root {
+            --primary: #00d2ff;
+            --secondary: #3a7bd5;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 顶部状态卡片 */
+        .status-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-card h2 { margin: 0; font-size: 1.2rem; font-weight: 500; }
+        .my-id-badge {
+            background: rgba(0, 210, 255, 0.1);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            user-select: all; /* 方便双击复制 */
+        }
+
+        /* 控制区域 */
+        .controls-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* 输入框和下拉菜单样式 */
+        input, select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus { border-color: var(--primary); }
+        input { flex-grow: 1; min-width: 200px; }
+        select { cursor: pointer; min-width: 120px; }
+
+        /* 按钮样式 */
+        button {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4);
+        }
+        button:active { transform: translateY(0); }
+
+        /* 视频播放器区域 */
+        .video-wrapper {
+            width: 100%;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* 视频占位提示 */
+        .video-placeholder {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        
+        /* 有画面时隐藏占位符 */
+        video[srcObject] + .video-placeholder { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 顶部身份信息 -->
+        <div class="status-card">
+            <h2>🛰️ 本机终端</h2>
+            <div>ID: <span id="my-id" class="my-id-badge">正在连接信令...</span></div>
+        </div>
+
+        <!-- 呼叫与设置中心 -->
+        <div class="controls-card">
+            <input type="text" id="remote-id" placeholder="👉 输入朋友的 ID">
+            
+            <!-- 新增：画质选择器 -->
+            <select id="video-quality">
+                <option value="auto">画质: 自动 (推荐)</option>
+                <option value="1080p">高清 (1080p, 30fps)</option>
+                <option value="720p">流畅 (720p, 30fps)</option>
+                <option value="480p">省流 (480p, 15fps)</option>
+            </select>
+
+            <button onclick="startShare()">🚀 发起屏幕共享</button>
+        </div>
+
+        <!-- 画面显示区 -->
+        <div class="video-wrapper">
+            <video id="remote-video" autoplay playsinline controls></video>
+            <div class="video-placeholder">等待画面接入...</div>
+        </div>
+    </div>
+
+    <!-- 引入 PeerJS 库 -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
