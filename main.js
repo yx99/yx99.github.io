@@ -478,6 +478,7 @@ async function toggleShare() {
     let constraints = { cursor: "always" };
 
     switch (quality) {
+        case '1080p60': constraints.width = { max: 1920 }; constraints.height = { max: 1080 }; constraints.frameRate = { max: 60 }; break;
         case '1080p': constraints.width = { max: 1920 }; constraints.height = { max: 1080 }; constraints.frameRate = { max: 30 }; break;
         case '720p': constraints.width = { max: 1280 }; constraints.height = { max: 720 }; constraints.frameRate = { max: 30 }; break;
         case '480p': constraints.width = { max: 854 }; constraints.height = { max: 480 }; constraints.frameRate = { max: 15 }; break;
