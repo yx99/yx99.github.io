@@ -89,8 +89,9 @@ function setupDataConn(conn) {
                     }
                     if (meshEvents.onPeerJoin) meshEvents.onPeerJoin(conn.peer, data.name);
 
-                    // 若已在语音房，自动建立语音连接
+                    // 若已在语音房，自动建立语音连接（晚进房机制）
                     if (window._inVoiceRoom && typeof processedAudioStream !== 'undefined' && processedAudioStream) {
+                        debugLog('mesh', 'hello 触发晚进房语音呼叫→', data.name);
                         if (typeof callVoice === 'function') callVoice(conn.peer, data.name);
                     }
                 }
@@ -118,10 +119,9 @@ function setupDataConn(conn) {
                 if (typeof updateRemoteVoiceStatus === 'function') {
                     updateRemoteVoiceStatus(data.userId, data.micOn, data.speakerOn);
                 }
-                // 晚进房机制
-                if (window._inVoiceRoom && meshPeers[data.userId] && !meshPeers[data.userId].voiceCall) {
-                    if (typeof callVoice === 'function') callVoice(data.userId, meshPeers[data.userId].name);
-                }
+                // 注意: 不在此处发起语音呼叫。由 hello 处理器（晚进房）
+                // 和 app.js peerEvents.onCall（被动接入）负责建立语音连接，
+                // 以避免双方同时呼叫产生重复 MediaConnection。
                 break;
             case 'room-disband':
                 alert("房主已解散了当前房间。");

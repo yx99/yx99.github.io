@@ -34,15 +34,36 @@
         const type = call.metadata?.type || 'screen';
 
         if (type === 'voice') {
-            if (!inVoiceRoom) return call.close();
+            debugLog('app', '收到语音来电←', call.peer, 'metadata:', call.metadata);
+            if (!inVoiceRoom) {
+                debugLog('app', '拒接语音: 本地不在语音房');
+                return call.close();
+            }
+
+            // 若已有活跃通话，仅应答不重复绑定事件
+            if (meshPeers[call.peer] && meshPeers[call.peer].voiceCall && meshPeers[call.peer].voiceCall.open) {
+                debugLog('app', '与', call.peer, '已有活跃通话，仅应答');
+                call.answer(processedAudioStream);
+                return;
+            }
 
             const callerName = call.metadata.name || '未知';
             if (!meshPeers[call.peer]) meshPeers[call.peer] = { name: callerName };
             meshPeers[call.peer].voiceCall = call;
 
             call.answer(processedAudioStream);
-            call.on('stream', stream => setupRemoteAudioUI(call.peer, callerName, stream));
-            call.on('close', () => removeRemoteAudioUI(call.peer));
+            call.on('stream', stream => {
+                debugLog('app', '语音来电收到流←', call.peer);
+                setupRemoteAudioUI(call.peer, callerName, stream);
+            });
+            call.on('close', () => {
+                debugLog('app', '语音来电关闭:', call.peer);
+                removeRemoteAudioUI(call.peer);
+            });
+            call.on('error', err => {
+                debugLog('app', '语音来电错误:', call.peer, err);
+                removeRemoteAudioUI(call.peer);
+            });
 
             // 诊断跟踪
             if (call.peerConnection) {

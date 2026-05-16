@@ -137,8 +137,10 @@ function getSpeakingState(peerId) {
 // 加入/退出语音房
 // ==========================================
 async function toggleVoiceRoom() {
+    debugLog('voice', 'toggleVoiceRoom 触发, 当前状态 inVoiceRoom=', inVoiceRoom, 'meshPeers数=', Object.keys(meshPeers).length);
     if (inVoiceRoom) {
         // 退出
+        debugLog('voice', '退出语音房');
         inVoiceRoom = false;
         window._inVoiceRoom = false;
         stopSpeakingDetection();
@@ -167,6 +169,7 @@ async function toggleVoiceRoom() {
         speakingStates = {};
     } else {
         // 加入
+        debugLog('voice', '开始加入语音房...');
         try {
             rawAudioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -176,9 +179,11 @@ async function toggleVoiceRoom() {
                     channelCount: { ideal: 1 }
                 }
             });
+            debugLog('voice', '麦克风已获取, 音轨数=', rawAudioStream.getAudioTracks().length);
 
             processedAudioStream = buildAudioPipeline(rawAudioStream);
             processedAudioStream.getAudioTracks()[0].enabled = isMicOn;
+            debugLog('voice', '音频管线已构建');
 
             inVoiceRoom = true;
             window._inVoiceRoom = true;
@@ -196,8 +201,12 @@ async function toggleVoiceRoom() {
             if (typeof broadcastVoiceState === 'function') broadcastVoiceState();
 
             // 向已有成员拨号
-            Object.keys(meshPeers).forEach(pid => callVoice(pid, meshPeers[pid].name));
+            const peerIds = Object.keys(meshPeers);
+            debugLog('voice', '准备向', peerIds.length, '个对端发起语音呼叫:', peerIds);
+            peerIds.forEach(pid => callVoice(pid, meshPeers[pid].name));
+            debugLog('voice', '语音房加入完成');
         } catch (e) {
+            debugLog('voice', '加入语音房失败:', e.message);
             alert("加入失败：未获得麦克风权限");
             console.error(e);
         }
@@ -205,14 +214,35 @@ async function toggleVoiceRoom() {
 }
 
 function callVoice(targetId, targetName) {
-    if (!processedAudioStream || !inVoiceRoom) return;
+    if (!processedAudioStream || !inVoiceRoom) {
+        debugLog('voice', 'callVoice 跳过: stream=', !!processedAudioStream, 'inRoom=', inVoiceRoom);
+        return;
+    }
+    // 防止重复呼叫同一节点
+    if (meshPeers[targetId] && meshPeers[targetId].voiceCall && meshPeers[targetId].voiceCall.open) {
+        debugLog('voice', 'callVoice 跳过: 与', targetName || targetId, '已有活跃通话');
+        return;
+    }
+    debugLog('voice', 'callVoice 发起→', targetName || targetId);
     const call = peer.call(targetId, processedAudioStream, {
         metadata: { type: 'voice', name: window._myName || '未知' }
     });
     if (!meshPeers[targetId]) meshPeers[targetId] = {};
     meshPeers[targetId].voiceCall = call;
-    call.on('stream', stream => setupRemoteAudioUI(targetId, targetName, stream));
-    call.on('close', () => removeRemoteAudioUI(targetId));
+    call.on('stream', stream => {
+        debugLog('voice', 'callVoice 收到流←', targetName || targetId);
+        setupRemoteAudioUI(targetId, targetName, stream);
+    });
+    call.on('close', () => {
+        debugLog('voice', 'callVoice 通话关闭:', targetName || targetId);
+        removeRemoteAudioUI(targetId);
+        if (meshPeers[targetId]) meshPeers[targetId].voiceCall = null;
+    });
+    call.on('error', err => {
+        debugLog('voice', 'callVoice 通话错误:', targetName || targetId, err);
+        removeRemoteAudioUI(targetId);
+        if (meshPeers[targetId]) meshPeers[targetId].voiceCall = null;
+    });
 }
 
 // ==========================================
@@ -340,6 +370,7 @@ function updateRemoteVoiceStatus(peerId, rmMicOn, rmSpeakerOn) {
 }
 
 function removeRemoteAudioUI(peerId) {
+    debugLog('voice', 'removeRemoteAudioUI:', peerId);
     document.getElementById(`vu-${peerId}`)?.remove();
     document.getElementById(`au-${peerId}`)?.remove();
     delete userVolumes[peerId];
@@ -347,6 +378,8 @@ function removeRemoteAudioUI(peerId) {
         try { remoteAnalysers[peerId].ctx.close(); } catch (e) {}
         delete remoteAnalysers[peerId];
     }
+    delete speakingStates[peerId];
+    if (meshPeers[peerId]) meshPeers[peerId].voiceCall = null;
     const popup = document.getElementById('personal-vol-popup');
     if (popup && popup.getAttribute('data-target') === peerId) {
         popup.style.display = 'none';
@@ -375,3 +408,48 @@ function stringToColor(str) {
     const hue = Math.abs(hash) % 360;
     return `hsl(${hue}, 55%, 45%)`;
 }
+
+// ==========================================
+// 语音流程自检 (浏览器控制台调用: _verifyVoiceFlow())
+// ==========================================
+window._verifyVoiceFlow = function () {
+    var report = [];
+    var add = function (label, value, ok) {
+        var icon = ok === true ? '✅' : ok === false ? '❌' : '➡️';
+        report.push(icon + ' ' + label + ': ' + value);
+    };
+
+    add('语音房状态 inVoiceRoom', inVoiceRoom, inVoiceRoom);
+    add('window._inVoiceRoom', window._inVoiceRoom);
+    add('原始音频流 rawAudioStream', rawAudioStream ? 'active (' + rawAudioStream.getAudioTracks().length + ' tracks)' : 'null', !!rawAudioStream);
+    add('处理后音频流 processedAudioStream', processedAudioStream ? 'active (' + processedAudioStream.getAudioTracks().length + ' tracks)' : 'null', !!processedAudioStream);
+    add('音频上下文 audioCtx', audioCtx ? audioCtx.state : 'null', audioCtx && audioCtx.state !== 'closed');
+    add('麦克风状态 isMicOn', isMicOn, isMicOn);
+    add('扬声器状态 isSpeakerOn', isSpeakerOn, isSpeakerOn);
+    add('语音检测定时器 speakingCheckInterval', speakingCheckInterval ? 'running' : 'stopped', !!speakingCheckInterval);
+    add('本机说话 localSpeaking', localSpeaking);
+    add('远端分析器数量 remoteAnalysers', Object.keys(remoteAnalysers).length);
+    add('用户音量设置 userVolumes', JSON.stringify(userVolumes));
+    add('说话状态 speakingStates', JSON.stringify(speakingStates));
+
+    report.push('---');
+    add('Mesh对端总数', Object.keys(meshPeers).length);
+    Object.keys(meshPeers).forEach(function (pid) {
+        var p = meshPeers[pid];
+        var vcStatus = '无语音通话';
+        if (p.voiceCall) {
+            vcStatus = p.voiceCall.open ? '🟢活跃' : '🔴已关闭';
+        }
+        add('  对端 ' + (p.name || pid), 'dataConn=' + (p.dataConn && p.dataConn.open ? '🟢' : '🔴') + ' voiceCall=' + vcStatus);
+    });
+
+    report.push('---');
+    add('语音用户UI (voice-users-container)', document.getElementById('voice-users-container') ? '存在' : '缺失', !!document.getElementById('voice-users-container'));
+    add('audio-container', document.getElementById('audio-container') ? '存在' : '缺失', !!document.getElementById('audio-container'));
+    add('语音频道按钮状态', document.getElementById('voice-channel-btn') ? document.getElementById('voice-channel-btn').className : '缺失');
+
+    debugLog('voice', '=== 语音流程自检报告 ===');
+    report.forEach(function (r) { debugLog('voice', r); });
+
+    return report.join('\n');
+};
