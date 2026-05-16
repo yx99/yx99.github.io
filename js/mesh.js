@@ -119,9 +119,11 @@ function setupDataConn(conn) {
                 if (typeof updateRemoteVoiceStatus === 'function') {
                     updateRemoteVoiceStatus(data.userId, data.micOn, data.speakerOn);
                 }
-                // 注意: 不在此处发起语音呼叫。由 hello 处理器（晚进房）
-                // 和 app.js peerEvents.onCall（被动接入）负责建立语音连接，
-                // 以避免双方同时呼叫产生重复 MediaConnection。
+                // 晚进房：若本端已在语音房且对方尚未建立通话，则发起呼叫
+                // callVoice 内置了重复呼叫防护（检查 voiceCall.open）
+                if (window._inVoiceRoom && meshPeers[data.userId] && !meshPeers[data.userId].voiceCall) {
+                    if (typeof callVoice === 'function') callVoice(data.userId, meshPeers[data.userId].name);
+                }
                 break;
             case 'room-disband':
                 alert("房主已解散了当前房间。");

@@ -103,7 +103,7 @@
     };
 
     meshEvents.onMeshChange = function () {
-        renderLocalNetInfo();
+        renderDiagnostics();
     };
 
     // 3. 启动 PeerJS

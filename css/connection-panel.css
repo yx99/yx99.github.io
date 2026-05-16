@@ -2,7 +2,6 @@
    连接诊断面板
    ========================================== */
 
-/* 面板切换按钮 */
 .diag-toggle-btn {
     width: 100%;
     padding: 6px var(--space-sm);
@@ -21,17 +20,16 @@
     background: var(--bg-hover);
 }
 
-/* 诊断面板主体 */
 .connection-panel {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
-    background: var(--bg-panel);
+    background: rgba(0,0,0,0.15);
     border-top: 1px solid rgba(255,255,255,0.05);
     font-size: var(--font-size-sm);
 }
 .connection-panel.open {
-    max-height: 400px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
@@ -39,155 +37,120 @@
     padding: var(--space-sm) var(--space-md);
 }
 
-.panel-section-title {
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: var(--space-sm) 0 var(--space-xs) 0;
-}
-
-/* 本机网络信息 */
+/* 本机网络 */
 .local-net-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
     margin-bottom: var(--space-sm);
 }
+.diag-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    padding: 2px 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+.diag-label {
+    width: 40px;
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.diag-value {
+    color: var(--text-normal);
+    font-family: 'Consolas', monospace;
+}
 
-.net-info-row {
+/* 摘要行 */
+.diag-summary {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: var(--space-xs) 0 var(--space-sm) 0;
+    font-size: 0.72rem;
     color: var(--text-muted);
-    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: var(--space-xs);
 }
-
-.net-info-row .label {
-    width: 55px;
-    flex-shrink: 0;
-    font-size: 0.7rem;
-}
-
-.net-info-row .value {
-    color: var(--text-normal);
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.7rem;
-}
-
-.net-info-row .indicator {
+.diag-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
 }
-.indicator.online  { background: var(--success); }
-.indicator.offline { background: var(--danger); }
-.indicator.checking { background: var(--warning); }
+.diag-dot.p2p    { background: var(--success); }
+.diag-dot.relay  { background: var(--warning); }
+.diag-dot.unknown { background: var(--text-muted); }
 
-/* 每个对端的连接条目 */
-.peer-diag-entry {
+.diag-empty {
+    padding: var(--space-sm) 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+/* 每对端条目 */
+.diag-peer {
     padding: var(--space-xs) 0;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+.diag-peer:last-child {
+    border-bottom: none;
 }
 
-.peer-diag-header {
+.diag-peer-top {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    font-size: 0.75rem;
 }
 
-.peer-diag-name {
-    font-weight: 600;
-    color: var(--text-normal);
-}
-
-.peer-diag-status {
-    font-size: 0.7rem;
-    padding: 1px 6px;
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-}
-.peer-diag-status.connected  { background: rgba(35,165,89,0.2);  color: var(--success); }
-.peer-diag-status.checking   { background: rgba(240,178,50,0.2);  color: var(--warning); }
-.peer-diag-status.disconnected { background: rgba(218,55,60,0.2); color: var(--danger); }
-.peer-diag-status.failed     { background: rgba(218,55,60,0.3);  color: var(--danger); }
-.peer-diag-status.new        { background: rgba(148,155,164,0.2); color: var(--text-muted); }
-
-.peer-diag-details {
-    margin-top: var(--space-xs);
-    margin-left: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: var(--text-muted);
-    font-size: 0.7rem;
-}
-
-.peer-diag-details .conn-type {
-    font-weight: 500;
-}
-.peer-diag-details .conn-type.p2p   { color: var(--success); }
-.peer-diag-details .conn-type.relay { color: var(--warning); }
-
-.peer-diag-details .candidate-line {
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.65rem;
-    padding-left: var(--space-sm);
-}
-
-/* 信号强度格 (侧边栏用户旁) */
-.signal-bars {
-    display: inline-flex;
-    gap: 1px;
-    align-items: flex-end;
-}
-.signal-bar {
-    width: 3px;
-    background: var(--text-muted);
-    border-radius: 1px;
-    transition: background var(--transition-fast);
-}
-.signal-bar:nth-child(1) { height: 4px; }
-.signal-bar:nth-child(2) { height: 7px; }
-.signal-bar:nth-child(3) { height: 10px; }
-.signal-bar:nth-child(4) { height: 13px; }
-
-/* 根据连接类型着色 */
-.signal-bars.p2p .signal-bar   { background: var(--success); }
-.signal-bars.relay .signal-bar { background: var(--warning); }
-.signal-bars.poor .signal-bar:nth-child(3),
-.signal-bars.poor .signal-bar:nth-child(4) { background: var(--danger); }
-
-.connection-summary {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-xs) var(--space-sm);
-    font-size: var(--font-size-sm);
-    color: var(--text-muted);
-}
-
-.connection-summary .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: var(--radius-round);
+.diag-peer-status {
+    font-size: 0.6rem;
     flex-shrink: 0;
 }
-.dot.p2p    { background: var(--success); }
-.dot.relay  { background: var(--warning); }
-.dot.off    { background: var(--danger); }
+.diag-peer-status.connected    { color: var(--success); }
+.diag-peer-status.checking     { color: var(--warning); }
+.diag-peer-status.new          { color: var(--text-muted); }
+.diag-peer-status.disconnected { color: var(--danger); }
+.diag-peer-status.failed       { color: var(--danger); }
 
-/* ICE 候选类型标签 */
-.ice-candidate-tag {
-    display: inline-block;
+.diag-peer-name {
+    color: var(--text-normal);
+    font-weight: 600;
+}
+
+.diag-rtt {
+    font-size: 0.65rem;
     padding: 0 4px;
     border-radius: 2px;
-    font-size: 0.6rem;
-    font-weight: 500;
-    margin-right: 4px;
+    font-family: 'Consolas', monospace;
 }
-.ice-candidate-tag.host  { background: rgba(88,101,242,0.3);  color: #aab; }
-.ice-candidate-tag.srflx { background: rgba(35,165,89,0.3);   color: #8c8; }
-.ice-candidate-tag.relay { background: rgba(240,178,50,0.3);   color: #ca8; }
+.diag-rtt.good { color: var(--success); }
+.diag-rtt.ok   { color: var(--warning); }
+.diag-rtt.poor { color: var(--danger); }
+
+.diag-conn-type {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+.diag-conn-type.p2p  { background: rgba(35,165,89,0.15);  color: var(--success); }
+.diag-conn-type.relay { background: rgba(240,178,50,0.15); color: var(--warning); }
+.diag-conn-type.unknown { color: var(--text-muted); }
+
+/* 对端 IP 信息 */
+.diag-peer-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+    margin-left: 18px;
+    font-size: 0.65rem;
+}
+.diag-ip {
+    color: var(--text-muted);
+    font-family: 'Consolas', monospace;
+}
+.diag-ip.dim { opacity: 0.5; }

@@ -3,7 +3,7 @@
 // ==========================================
 
 // 每节点连接诊断数据
-let peerDiagData = {}; // { peerId: { iceState, connectionType, candidates[], rtt } }
+let peerDiagData = {}; // { peerId: { iceState, connectionType, candidates[], rtt, ipv4, ipv6 } }
 let localNetInfo = { ipv4: [], ipv6: [] };
 
 // ==========================================
@@ -65,7 +65,7 @@ async function initConnectionDiagnostics() {
     } catch (e) {
         debugLog('diag', '本机 IP 发现失败:', e);
     }
-    renderLocalNetInfo();
+    renderDiagnostics();
 }
 
 // ==========================================
@@ -78,10 +78,9 @@ function trackPeerConnection(peerId, pc) {
         peerDiagData[peerId] = {
             iceState: 'new',
             connectionType: 'unknown',
-            candidates: [],
-            rtt: null,
-            localCandidates: [],
-            remoteCandidates: []
+            ipv4: null,
+            ipv6: null,
+            rtt: null
         };
     }
 
@@ -89,26 +88,11 @@ function trackPeerConnection(peerId, pc) {
 
     pc.oniceconnectionstatechange = () => {
         diag.iceState = pc.iceConnectionState;
-        updatePeerDiagUI(peerId);
+        renderDiagnostics();
         updateConnectionQualityIcon(peerId);
     };
 
-    pc.onicecandidate = (e) => {
-        if (e.candidate) {
-            const parts = e.candidate.candidate.split(' ');
-            const addr = parts[4];
-            const type = parts[7];
-            diag.candidates.push({
-                addr,
-                type,
-                protocol: parts[2]?.toLowerCase(),
-                local: true
-            });
-            updatePeerDiagUI(peerId);
-        }
-    };
-
-    // 周期性获取 stats (RTT / 选定对)
+    // 周期性获取 stats
     const statsInterval = setInterval(async () => {
         if (!meshPeers[peerId]) { clearInterval(statsInterval); return; }
         try {
@@ -116,172 +100,170 @@ function trackPeerConnection(peerId, pc) {
             stats.forEach(report => {
                 if (report.type === 'candidate-pair' && report.state === 'succeeded') {
                     diag.rtt = report.currentRoundTripTime
-                        ? (report.currentRoundTripTime * 1000).toFixed(1)
+                        ? (report.currentRoundTripTime * 1000).toFixed(0)
                         : null;
-                    diag.connectionType = report.localCandidateType === 'relay' ||
-                                          report.remoteCandidateType === 'relay'
-                        ? 'relay' : 'p2p';
+                    const isRelay = report.localCandidateType === 'relay' ||
+                                    report.remoteCandidateType === 'relay';
+                    diag.connectionType = isRelay ? 'relay' : 'p2p';
                 }
-                // 收集远端候选
-                if (report.type === 'remote-candidate') {
-                    const exists = diag.remoteCandidates.find(c => c.addr === report.ip);
-                    if (!exists && report.ip) {
-                        diag.remoteCandidates.push({
-                            addr: report.ip,
-                            type: report.candidateType,
-                            protocol: report.protocol?.toLowerCase()
-                        });
+                if (report.type === 'remote-candidate' && report.ip) {
+                    if (report.ip.includes(':')) {
+                        diag.ipv6 = report.ip;
+                    } else {
+                        diag.ipv4 = report.ip;
+                    }
+                }
+                if (report.type === 'local-candidate' && report.ip) {
+                    if (report.ip.includes(':')) {
+                        if (!diag.ipv6) diag.ipv6 = report.ip;
+                    } else {
+                        if (!diag.ipv4) diag.ipv4 = report.ip;
                     }
                 }
             });
-            updatePeerDiagUI(peerId);
+            renderDiagnostics();
             updateConnectionQualityIcon(peerId);
-        } catch (e) { /* stats 获取失败，忽略 */ }
+        } catch (e) { /* 忽略 stats 获取失败 */ }
     }, 3000);
 }
 
 // ==========================================
-// 更新侧边栏连接质量图标
+// 诊断面板渲染 (简洁可读)
 // ==========================================
+function renderDiagnostics() {
+    renderLocalNetInfo();
+    renderPeerDiagList();
+}
+
+function renderLocalNetInfo() {
+    const container = document.getElementById('local-net-info');
+    if (!container) return;
+
+    const v4addrs = localNetInfo.ipv4.map(c => c.addr).join(', ') || '未检测到';
+    const v6addrs = localNetInfo.ipv6.map(c => c.addr).join(', ') || '未检测到';
+
+    container.innerHTML =
+        `<div class="diag-row"><span class="diag-label">IPv4</span><span class="diag-value">${escapeHtml(v4addrs)}</span></div>
+         <div class="diag-row"><span class="diag-label">IPv6</span><span class="diag-value">${escapeHtml(v6addrs)}</span></div>`;
+}
+
+function renderPeerDiagList() {
+    const container = document.getElementById('peer-diag-list');
+    if (!container) return;
+
+    const peerIds = Object.keys(meshPeers);
+    if (peerIds.length === 0) {
+        container.innerHTML = '<div class="diag-empty">暂无对端连接</div>';
+        return;
+    }
+
+    // 统计
+    let p2pCount = 0, relayCount = 0, unknownCount = 0;
+    peerIds.forEach(pid => {
+        const d = peerDiagData[pid];
+        if (!d || d.connectionType === 'unknown') unknownCount++;
+        else if (d.connectionType === 'p2p') p2pCount++;
+        else relayCount++;
+    });
+
+    let html = '<div class="diag-summary">';
+    html += `<span>对端 ${peerIds.length} 个</span>`;
+    if (p2pCount > 0) html += `<span class="diag-dot p2p"></span><span>P2P直连 ${p2pCount}</span>`;
+    if (relayCount > 0) html += `<span class="diag-dot relay"></span><span>中继 ${relayCount}</span>`;
+    if (unknownCount > 0) html += `<span class="diag-dot unknown"></span><span>检测中 ${unknownCount}</span>`;
+    html += '</div>';
+
+    peerIds.forEach(pid => {
+        const diag = peerDiagData[pid];
+        const name = getPeerName(pid);
+        html += renderPeerDiagEntry(pid, name, diag);
+    });
+
+    container.innerHTML = html;
+}
+
+function renderPeerDiagEntry(peerId, name, diag) {
+    // 状态图标和文字
+    let statusIcon, statusText, statusCls;
+    switch (diag?.iceState) {
+        case 'connected':
+            statusIcon = '●'; statusText = '已连接'; statusCls = 'connected'; break;
+        case 'checking':
+            statusIcon = '◐'; statusText = '协商中'; statusCls = 'checking'; break;
+        case 'new':
+            statusIcon = '○'; statusText = '等待'; statusCls = 'new'; break;
+        case 'disconnected':
+            statusIcon = '✕'; statusText = '断开'; statusCls = 'disconnected'; break;
+        case 'failed':
+            statusIcon = '✕'; statusText = '失败'; statusCls = 'failed'; break;
+        default:
+            statusIcon = '○'; statusText = diag?.iceState || '未知'; statusCls = 'new';
+    }
+
+    // 连接方式
+    let connInfo = '';
+    if (diag?.connectionType === 'p2p') {
+        connInfo = '<span class="diag-conn-type p2p">⚡ 直连</span>';
+    } else if (diag?.connectionType === 'relay') {
+        connInfo = '<span class="diag-conn-type relay">🔄 中继转发</span>';
+    } else {
+        connInfo = '<span class="diag-conn-type unknown">… 检测中</span>';
+    }
+
+    // RTT 延迟
+    let rttInfo = '';
+    if (diag?.rtt) {
+        const rtt = parseInt(diag.rtt);
+        const rttCls = rtt < 50 ? 'good' : rtt < 150 ? 'ok' : 'poor';
+        rttInfo = `<span class="diag-rtt ${rttCls}">${rtt}ms</span>`;
+    }
+
+    // IP 信息
+    let ipInfo = '';
+    if (diag?.ipv4) ipInfo += `<span class="diag-ip">IPv4: ${escapeHtml(diag.ipv4)}</span>`;
+    if (diag?.ipv6) ipInfo += `<span class="diag-ip">IPv6: ${escapeHtml(diag.ipv6)}</span>`;
+    if (!ipInfo) ipInfo = '<span class="diag-ip dim">IP 收集中...</span>';
+
+    return `<div class="diag-peer">
+        <div class="diag-peer-top">
+            <span class="diag-peer-status ${statusCls}">${statusIcon}</span>
+            <span class="diag-peer-name">${escapeHtml(name)}</span>
+            ${rttInfo}
+            ${connInfo}
+        </div>
+        <div class="diag-peer-info">${ipInfo}</div>
+    </div>`;
+}
+
+function toggleConnectionPanel() {
+    const panel = document.getElementById('connection-panel');
+    if (panel) panel.classList.toggle('open');
+}
+
+// 更新侧边栏连接质量图标（语音用户旁）
 function updateConnectionQualityIcon(peerId) {
     const el = document.getElementById(`conn-quality-${peerId}`);
     if (!el) return;
     const diag = peerDiagData[peerId];
     if (!diag) return;
 
-    let icon = '';
-    let title = '';
-    let cls = '';
-
-    switch (diag.iceState) {
-        case 'connected':
-            if (diag.connectionType === 'p2p') {
-                icon = '🟢';
-                title = 'P2P 直连';
-                cls = 'p2p';
-            } else if (diag.connectionType === 'relay') {
-                icon = '🟡';
-                title = 'TURN 中继';
-                cls = 'relay';
-            } else {
-                icon = '🟢';
-                title = '已连接';
-                cls = 'p2p';
-            }
-            break;
-        case 'checking':
-            icon = '🟠';
-            title = '连接中...';
-            cls = '';
-            break;
-        case 'new':
-            icon = '⚪';
-            title = '等待连接';
-            cls = '';
-            break;
-        case 'disconnected':
-        case 'failed':
-        case 'closed':
-            icon = '🔴';
-            title = '连接断开';
-            cls = 'off';
-            break;
-        default:
-            icon = '⚪';
-            title = diag.iceState;
+    let icon, title;
+    if (diag.iceState === 'connected') {
+        if (diag.connectionType === 'p2p') {
+            icon = diag.rtt && parseInt(diag.rtt) < 30 ? '⚡' : '🟢';
+            title = 'P2P 直连' + (diag.rtt ? ` ${diag.rtt}ms` : '');
+        } else if (diag.connectionType === 'relay') {
+            icon = '🔄';
+            title = 'TURN 中继' + (diag.rtt ? ` ${diag.rtt}ms` : '');
+        } else {
+            icon = '🟢';
+            title = '已连接';
+        }
+    } else if (diag.iceState === 'checking') {
+        icon = '🟠'; title = '连接中…';
+    } else {
+        icon = '🔴'; title = '未连接';
     }
-
-    el.innerHTML = icon;
+    el.textContent = icon;
     el.title = title;
-    el.className = 'conn-quality ' + cls;
-}
-
-// ==========================================
-// UI 渲染
-// ==========================================
-function renderLocalNetInfo() {
-    const container = document.getElementById('local-net-info');
-    if (!container) return;
-
-    let html = '';
-    localNetInfo.ipv4.forEach(c => {
-        html += `<div class="net-info-row">
-            <span class="label">IPv4</span>
-            <span class="value">${escapeHtml(c.addr)}</span>
-            <span class="ice-candidate-tag ${c.type}">${c.type}</span>
-        </div>`;
-    });
-    localNetInfo.ipv6.forEach(c => {
-        html += `<div class="net-info-row">
-            <span class="label">IPv6</span>
-            <span class="value">${escapeHtml(c.addr)}</span>
-            <span class="ice-candidate-tag ${c.type}">${c.type}</span>
-        </div>`;
-    });
-    if (!html) {
-        html = '<div class="net-info-row"><span class="value">发现中...</span></div>';
-    }
-    container.innerHTML = html;
-}
-
-function updatePeerDiagUI(peerId) {
-    const container = document.getElementById('peer-diag-list');
-    if (!container) return;
-    const diag = peerDiagData[peerId];
-    if (!diag) return;
-
-    const name = getPeerName(peerId);
-    const stateClass = diag.iceState;
-    const stateLabel = {
-        'new': '等待', 'checking': '连接中', 'connected': '已连接',
-        'disconnected': '断开', 'failed': '失败', 'closed': '关闭'
-    }[diag.iceState] || diag.iceState;
-
-    const connType = diag.connectionType || 'unknown';
-    const connTypeLabel = connType === 'p2p' ? 'P2P 直连' : connType === 'relay' ? 'TURN 中继' : '检测中';
-    const rttStr = diag.rtt ? `${diag.rtt} ms` : '—';
-
-    let entry = document.getElementById(`diag-${peerId}`);
-    if (!entry) {
-        entry = document.createElement('div');
-        entry.id = `diag-${peerId}`;
-        entry.className = 'peer-diag-entry';
-        container.appendChild(entry);
-    }
-
-    entry.innerHTML = `
-        <div class="peer-diag-header">
-            <span class="peer-diag-name">${escapeHtml(name)}</span>
-            <span class="peer-diag-status ${stateClass}">${stateLabel}</span>
-        </div>
-        <div class="peer-diag-details">
-            <div>连接方式: <span class="conn-type ${connType}">${connTypeLabel}</span>  |  延迟: ${rttStr}</div>
-            ${renderCandidateLines(diag)}
-        </div>`;
-}
-
-function renderCandidateLines(diag) {
-    let lines = '';
-    diag.candidates.forEach(c => {
-        const ipv = c.addr && c.addr.includes(':') ? 'v6' : 'v4';
-        lines += `<div class="candidate-line">
-            <span class="ice-candidate-tag ${c.type}">${c.type}</span>
-            IPv${ipv}: ${escapeHtml(c.addr || '?')} (${c.protocol || '?'})
-        </div>`;
-    });
-    if (diag.remoteCandidates && diag.remoteCandidates.length > 0) {
-        diag.remoteCandidates.forEach(c => {
-            const ipv = c.addr && c.addr.includes(':') ? 'v6' : 'v4';
-            lines += `<div class="candidate-line">
-                <span class="ice-candidate-tag ${c.type}">远端-${c.type}</span>
-                IPv${ipv}: ${escapeHtml(c.addr || '?')} (${c.protocol || '?'})
-            </div>`;
-        });
-    }
-    return lines;
-}
-
-function toggleConnectionPanel() {
-    const panel = document.getElementById('connection-panel');
-    if (panel) panel.classList.toggle('open');
 }

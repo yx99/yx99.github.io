@@ -322,6 +322,8 @@ function setupRemoteAudioUI(peerId, peerName, stream) {
     audio.srcObject = stream;
     audio.muted = !isSpeakerOn;
     document.getElementById('audio-container').appendChild(audio);
+    // 绕过浏览器 autoplay 限制
+    audio.play().catch(e => debugLog('voice', 'audio.play() 被浏览器阻止:', peerId, e.name));
 
     userVolumes[peerId] = 1.0;
     applyAllVolumes();
@@ -360,6 +362,8 @@ function setupRemoteAudioUI(peerId, peerName, stream) {
         if (typeof showPersonalVolumePopup === 'function') showPersonalVolumePopup(e, peerId, peerName);
     };
     container.appendChild(div);
+
+    if (typeof updateVoiceStatusBadge === 'function') updateVoiceStatusBadge();
 }
 
 function updateRemoteVoiceStatus(peerId, rmMicOn, rmSpeakerOn) {
@@ -384,6 +388,8 @@ function removeRemoteAudioUI(peerId) {
     if (popup && popup.getAttribute('data-target') === peerId) {
         popup.style.display = 'none';
     }
+
+    if (typeof updateVoiceStatusBadge === 'function') updateVoiceStatusBadge();
 }
 
 // ==========================================

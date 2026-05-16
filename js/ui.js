@@ -94,6 +94,41 @@ function updateTopBarStatus() {
         if (connectArea) connectArea.style.display = 'flex';
         if (roomStatusArea) roomStatusArea.style.display = 'none';
     }
+
+    updateVoiceStatusBadge();
+}
+
+// 语音连接状态指示器
+function updateVoiceStatusBadge() {
+    const badge = document.getElementById('voice-status-badge');
+    if (!badge) return;
+
+    // 不在语音房 → 隐藏
+    if (!window._inVoiceRoom) {
+        badge.style.display = 'none';
+        return;
+    }
+
+    badge.style.display = 'inline-block';
+    const peerCount = Object.keys(meshPeers).length;
+    let activeVoiceCalls = 0;
+    Object.values(meshPeers).forEach(p => {
+        if (p.voiceCall && p.voiceCall.open) activeVoiceCalls++;
+    });
+
+    if (peerCount === 0) {
+        badge.className = 'badge';
+        badge.innerText = '🎙️ 语音已开启 (等待对端加入)';
+    } else if (activeVoiceCalls === peerCount) {
+        badge.className = 'badge success';
+        badge.innerText = `🎙️ 语音通话中 (${activeVoiceCalls}人)`;
+    } else if (activeVoiceCalls > 0) {
+        badge.className = 'badge warning';
+        badge.innerText = `🎙️ 部分连通 (${activeVoiceCalls}/${peerCount})`;
+    } else {
+        badge.className = 'badge';
+        badge.innerText = '🎙️ 语音连接中...';
+    }
 }
 
 // ==========================================
