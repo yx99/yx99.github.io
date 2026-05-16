@@ -1,0 +1,105 @@
+/* ==========================================
+   聊天区 — 消息历史、输入框
+   ========================================== */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-main);
+    overflow: hidden;
+    min-height: 0;
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* 消息块 */
+.msg-block {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.msg-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-round);
+    background: var(--primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.msg-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.msg-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.msg-author {
+    font-weight: 500;
+    color: var(--text-white);
+}
+
+.msg-time {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+.msg-text {
+    color: var(--text-normal);
+    line-height: 1.4;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* 系统消息 */
+.msg-system {
+    color: var(--text-muted);
+    font-size: var(--font-size-md);
+    text-align: center;
+    padding: var(--space-xs) 0;
+}
+
+/* 聊天输入 */
+.chat-input-wrapper {
+    margin-top: var(--space-lg);
+    background: var(--bg-chat-input);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.chat-input-wrapper .prefix {
+    color: var(--text-muted);
+    margin-right: var(--space-md);
+    font-size: var(--font-size-xl);
+}
+
+.chat-input-wrapper input {
+    background: transparent;
+    border: none;
+    color: var(--text-white);
+    font-size: var(--font-size-lg);
+    width: 100%;
+    outline: none;
+}
+.chat-input-wrapper input::placeholder {
+    color: var(--text-muted);
+}

@@ -1,0 +1,59 @@
+/* ==========================================
+   CSS 变量定义 — 颜色、间距、断点、圆角
+   ========================================== */
+:root {
+    /* 主题色 */
+    --bg-sidebar: #2b2d31;
+    --bg-user-bar: #232428;
+    --bg-main: #313338;
+    --bg-chat-input: #383a40;
+    --bg-hover: #3f4147;
+    --bg-toast: #111214;
+    --bg-panel: #1e1f22;
+
+    /* 文字色 */
+    --text-normal: #dbdee1;
+    --text-muted: #949ba4;
+    --text-white: #ffffff;
+
+    /* 品牌色 */
+    --primary: #5865f2;
+    --primary-hover: #4752c4;
+    --danger: #da373c;
+    --danger-hover: #c02b30;
+    --success: #23a559;
+    --warning: #f0b232;
+    --speaking: #3ba55d;
+
+    /* 间距 */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+
+    /* 圆角 */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-round: 50%;
+
+    /* 阴影 */
+    --shadow-popup: 0 8px 16px rgba(0,0,0,0.8);
+    --shadow-bar: 0 1px 2px rgba(0,0,0,0.1);
+
+    /* 断点 (供 JS 读取) */
+    --bp-tablet: 1024px;
+    --bp-mobile: 768px;
+
+    /* 字体 */
+    --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-size-sm: 0.75rem;
+    --font-size-md: 0.9rem;
+    --font-size-lg: 1rem;
+    --font-size-xl: 1.1rem;
+
+    /* 动效 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.2s ease;
+}

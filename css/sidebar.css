@@ -1,0 +1,222 @@
+/* ==========================================
+   侧边栏 — 频道列表、语音用户、用户状态栏
+   ========================================== */
+.sidebar {
+    width: 260px;
+    background: var(--bg-sidebar);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0,0,0,0.2);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+
+.server-header {
+    height: 48px;
+    padding: 0 var(--space-lg);
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    font-size: var(--font-size-xl);
+    border-bottom: 1px solid rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-bar);
+    justify-content: space-between;
+}
+
+/* 汉堡菜单按钮 (移动端可见) */
+.hamburger-btn {
+    display: none;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 1.2rem;
+    border-radius: var(--radius-sm);
+    align-items: center;
+    justify-content: center;
+}
+.hamburger-btn:hover {
+    background: var(--bg-hover);
+}
+
+/* 侧边栏遮罩 (移动端) */
+.sidebar-overlay {
+    display: none;
+}
+
+/* 频道列表 */
+.channel-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-md) var(--space-sm);
+}
+
+.category-title {
+    font-size: var(--font-size-sm);
+    font-weight: bold;
+    color: var(--text-muted);
+    padding: 0 var(--space-sm);
+    margin-bottom: var(--space-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 语音频道 */
+.voice-channel {
+    padding: 6px var(--space-sm);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: background var(--transition-normal),
+                color var(--transition-normal);
+}
+.voice-channel:hover {
+    background: var(--bg-hover);
+    color: var(--text-normal);
+}
+.voice-channel.active {
+    background: rgba(88, 101, 242, 0.15);
+    color: var(--primary);
+}
+
+/* 语音用户列表 */
+.voice-users {
+    margin-left: 20px;
+    margin-top: var(--space-xs);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+}
+.voice-users.open {
+    display: flex;
+}
+
+.voice-user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-size-md);
+    color: var(--text-muted);
+    position: relative;
+}
+.voice-user:hover {
+    background: var(--bg-hover);
+    color: var(--text-normal);
+}
+
+/* 用户头像 */
+.voice-user .avatar,
+.msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-round);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* 说话指示灯绿点 */
+.speaking-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-round);
+    background: var(--speaking);
+    border: 2px solid var(--bg-sidebar);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+.speaking-dot.active {
+    opacity: 1;
+}
+
+/* 连接质量图标 */
+.conn-quality {
+    font-size: 0.65rem;
+    margin-left: 2px;
+    opacity: 0.8;
+}
+
+/* 用户状态栏 (底部) */
+.user-bar {
+    height: 52px;
+    background: var(--bg-user-bar);
+    padding: 0 var(--space-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    min-width: 0;
+}
+.user-info:hover {
+    background: var(--bg-hover);
+}
+
+.my-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-round);
+    background: var(--danger);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    flex-shrink: 0;
+}
+
+.my-name {
+    font-size: var(--font-size-md);
+    font-weight: bold;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+}
+
+.my-id {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+}
+.my-id:hover {
+    color: var(--primary);
+}
+
+/* 控制按钮组 */
+.control-btns {
+    display: flex;
+    gap: var(--space-xs);
+}

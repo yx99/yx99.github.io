@@ -1,0 +1,257 @@
+/* ==========================================
+   控件 — 按钮、滑块、弹窗、Toast
+   ========================================== */
+
+/* --- 按钮 --- */
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    padding: 6px var(--space-lg);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: var(--font-size-md);
+    transition: background var(--transition-fast);
+    white-space: nowrap;
+}
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+}
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+    padding: 6px var(--space-lg);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: var(--font-size-md);
+    transition: background var(--transition-fast);
+    white-space: nowrap;
+}
+.btn-danger:hover {
+    background: var(--danger-hover);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-normal);
+    padding: 6px var(--space-lg);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.15);
+    font-weight: 500;
+    font-size: var(--font-size-md);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+.btn-outline:hover {
+    background: var(--bg-hover);
+    border-color: rgba(255,255,255,0.3);
+}
+
+/* --- 图标按钮 --- */
+.icon-btn-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: background var(--transition-fast);
+}
+.icon-btn:hover {
+    background: var(--bg-hover);
+}
+
+.icon-btn.muted {
+    color: var(--danger);
+    position: relative;
+}
+.icon-btn.muted::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 2px;
+    background: var(--danger);
+    transform: rotate(45deg);
+}
+
+/* --- 音量悬浮窗 --- */
+.hover-volume-popup {
+    position: absolute;
+    bottom: 45px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-sidebar);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popup);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    border: 1px solid rgba(255,255,255,0.05);
+    width: 140px;
+    z-index: 9999;
+}
+.hover-volume-popup::before {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    width: 100%;
+    height: 15px;
+    background: transparent;
+}
+.hover-volume-popup::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 10px;
+    height: 10px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.icon-btn-wrapper:hover .hover-volume-popup {
+    display: flex;
+}
+
+.vol-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* --- 个人音量弹窗 --- */
+#personal-vol-popup {
+    position: fixed;
+    background: var(--bg-panel);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popup);
+    display: none;
+    z-index: 10000;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* --- 统一滑块样式 --- */
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #4f545c;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+}
+
+/* --- 画质选择器 --- */
+.quality-select {
+    background: var(--bg-chat-input);
+    color: white;
+    border: none;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    outline: none;
+    font-size: var(--font-size-md);
+    cursor: pointer;
+}
+.quality-select option {
+    background: var(--bg-sidebar);
+    color: white;
+}
+
+/* --- Toast 通知 --- */
+.toast-container {
+    position: fixed;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    pointer-events: none;
+}
+
+.toast {
+    background: var(--bg-toast);
+    color: white;
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    box-shadow: var(--shadow-popup);
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: toast-in 0.3s ease, toast-out 0.3s ease 2.7s;
+    pointer-events: auto;
+    max-width: 320px;
+}
+
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error   { border-left: 3px solid var(--danger); }
+.toast.warning { border-left: 3px solid var(--warning); }
+.toast.info    { border-left: 3px solid var(--primary); }
+
+@keyframes toast-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes toast-out {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(100%); opacity: 0; }
+}
+
+/* --- 状态标签 --- */
+.badge {
+    background: var(--bg-chat-input);
+    color: var(--text-normal);
+    padding: 4px 10px;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    font-weight: bold;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.badge.success {
+    background: var(--success);
+    color: white;
+}
+.badge.warning {
+    background: var(--warning);
+    color: #000;
+}
+.badge.danger {
+    background: var(--danger);
+    color: white;
+}

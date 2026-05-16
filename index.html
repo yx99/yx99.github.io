@@ -2,128 +2,30 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>音视频服务器</title>
-    <style>
-        /* ==========================================
-           1. 全局与变量定义
-           ========================================== */
-        :root {
-            --bg-sidebar: #2b2d31; --bg-user-bar: #232428; --bg-main: #313338;
-            --bg-chat-input: #383a40; --bg-hover: #3f4147;
-            --text-normal: #dbdee1; --text-muted: #949ba4;
-            --primary: #5865f2; --danger: #da373c; --success: #23a559;
-        }
-
-        body {
-            margin: 0; font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg-main); color: var(--text-normal);
-            height: 100vh; overflow: hidden; display: flex;
-        }
-
-        button { font-family: inherit; cursor: pointer; border: none; outline: none; }
-        .app-layout { display: flex; width: 100%; height: 100%; }
-
-        /* ==========================================
-           2. 侧边栏 (频道与语音列表)
-           ========================================== */
-        .sidebar { width: 260px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.2); }
-        .server-header { height: 48px; padding: 0 16px; display: flex; align-items: center; font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid rgba(0,0,0,0.2); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .channel-list { flex: 1; overflow-y: auto; padding: 12px 8px; }
-        .category-title { font-size: 0.75rem; font-weight: bold; color: var(--text-muted); padding: 0 8px; margin-bottom: 4px; display: flex; align-items: center; }
-
-        .voice-channel { padding: 6px 8px; border-radius: 4px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
-        .voice-channel:hover { background: var(--bg-hover); color: var(--text-normal); }
-        .voice-channel.active { background: rgba(88, 101, 242, 0.1); color: var(--primary); }
-
-        .voice-users { margin-left: 20px; margin-top: 4px; display: none; flex-direction: column; gap: 2px; }
-        .voice-users.open { display: flex; }
-        .voice-user { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; color: var(--text-muted); }
-        .voice-user:hover { background: var(--bg-hover); color: var(--text-normal); }
-        .voice-user .avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: bold; }
-
-        /* ==========================================
-           3. 底部用户状态栏 (个人信息与设备控制)
-           ========================================== */
-        .user-bar { height: 52px; background: var(--bg-user-bar); padding: 0 8px; display: flex; align-items: center; justify-content: space-between; }
-        .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px; border-radius: 4px; }
-        .user-info:hover { background: var(--bg-hover); }
-        .my-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--danger); display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .my-name { font-size: 0.9rem; font-weight: bold; line-height: 1.2; }
-        .my-id { font-size: 0.75rem; color: var(--text-muted); transition: color 0.2s; }
-        .my-id:hover { color: var(--primary); }
-
-        .control-btns { display: flex; gap: 4px; }
-        .icon-btn-wrapper { position: relative; display: flex; justify-content: center; }
-        .icon-btn { width: 32px; height: 32px; border-radius: 4px; background: transparent; color: var(--text-normal); display: flex; align-items: center; justify-content: center; }
-        .icon-btn:hover { background: var(--bg-hover); }
-        .icon-btn.muted { color: var(--danger); position: relative; }
-        .icon-btn.muted::after { content: ''; position: absolute; width: 20px; height: 2px; background: var(--danger); transform: rotate(45deg); }
-
-        /* 音量调节悬浮窗及桥接层(防止鼠标移出断层) */
-        .hover-volume-popup {
-            position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
-            background: var(--bg-sidebar); padding: 12px; border-radius: 8px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.8); display: none; flex-direction: column; 
-            align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.05); 
-            width: 140px; z-index: 9999;
-        }
-        .hover-volume-popup::before { content: ''; position: absolute; bottom: -15px; left: 0; width: 100%; height: 15px; background: transparent; }
-        .hover-volume-popup::after {
-            content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%) rotate(45deg);
-            width: 10px; height: 10px; background: var(--bg-sidebar); border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .icon-btn-wrapper:hover .hover-volume-popup { display: flex; }
-        .vol-label { font-size: 0.8rem; color: var(--text-muted); }
-
-        /* ==========================================
-           4. 主内容区 (顶栏、视频投屏、聊天室)
-           ========================================== */
-        .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
-        .top-bar { height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(0,0,0,0.2); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .top-bar input { background: var(--bg-chat-input); border: none; color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.9rem; outline: none; width: 220px; }
-        
-        .btn-primary { background: var(--primary); color: white; padding: 6px 16px; border-radius: 4px; font-weight: 500; }
-        .btn-primary:hover:not(:disabled) { background: #4752c4; }
-        .btn-danger { background: var(--danger); color: white; padding: 6px 16px; border-radius: 4px; font-weight: 500; }
-        .btn-danger:hover { background: #c02b30; }
-
-        .content-body { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 16px; overflow: hidden; }
-        .video-wrapper { width: 100%; max-height: 50%; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); overflow: hidden; }
-        .chat-history { flex: 1; overflow-y: auto; padding-right: 8px; display: flex; flex-direction: column; gap: 16px; }
-        .msg-block { display: flex; gap: 16px; }
-        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; justify-content: center; align-items: center; font-weight: bold;}
-        .msg-content { display: flex; flex-direction: column; }
-        .msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-        .msg-author { font-weight: 500; color: white; }
-        .msg-time { font-size: 0.75rem; color: var(--text-muted); }
-        .msg-text { color: var(--text-normal); line-height: 1.4; word-break: break-all; }
-
-        .chat-input-wrapper { margin-top: 16px; background: var(--bg-chat-input); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; }
-        .chat-input-wrapper input { background: transparent; border: none; color: white; font-size: 1rem; width: 100%; outline: none; }
-
-        /* ==========================================
-           5. 全局独立悬浮窗 (针对特定用户调音)
-           ========================================== */
-        #personal-vol-popup {
-            position: absolute; background: #111214; padding: 12px 16px; border-radius: 8px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.8); display: none; z-index: 10000;
-            border: 1px solid rgba(255,255,255,0.1); color: white; flex-direction: column; gap: 8px;
-        }
-        
-        /* 统一样式：滑动条 */
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #4f545c; border-radius: 3px; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: white; cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/video.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/connection-panel.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
 
+    <!-- 侧边栏遮罩 (移动端) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <div class="app-layout">
-        <nav class="sidebar">
-            <div class="server-header">服务器</div>
+        <!-- ========== 侧边栏 ========== -->
+        <nav class="sidebar" id="sidebar">
+            <div class="server-header">
+                <span>服务器</span>
+                <button class="hamburger-btn" onclick="toggleSidebar()" title="菜单">☰</button>
+            </div>
+
             <div class="channel-list">
                 <div class="category-title">🔊 语音分组</div>
                 <div class="voice-channel" id="voice-channel-btn" onclick="toggleVoiceRoom()">
@@ -132,28 +34,46 @@
                 <div class="voice-users" id="voice-users-container"></div>
             </div>
 
+            <!-- 连接诊断面板 -->
+            <div>
+                <button class="diag-toggle-btn" onclick="toggleConnectionPanel()">
+                    📡 网络诊断
+                </button>
+                <div class="connection-panel" id="connection-panel">
+                    <div class="connection-panel-inner">
+                        <div class="panel-section-title">本机网络</div>
+                        <div class="local-net-info" id="local-net-info">
+                            <div class="net-info-row"><span class="value">发现中...</span></div>
+                        </div>
+                        <div class="panel-section-title">对端节点</div>
+                        <div id="peer-diag-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部用户状态栏 -->
             <div class="user-bar">
                 <div class="user-info">
                     <div class="my-avatar" id="my-avatar-icon" onclick="changeName()" title="点击改名">U</div>
                     <div>
                         <div class="my-name" id="my-name-display" onclick="changeName()" title="点击改名">读取中...</div>
-                        <div class="my-id" id="my-id-display" onclick="copyMyId()" title="点击复制完整 ID" style="cursor:pointer;">连接信令...</div>
+                        <div class="my-id" id="my-id-display" onclick="copyMyId()" title="点击复制完整 ID">连接信令...</div>
                     </div>
                 </div>
-                
+
                 <div class="control-btns">
                     <div class="icon-btn-wrapper">
                         <button class="icon-btn" onclick="resetConfig()" title="修改密码">⚙️</button>
                     </div>
                     <div class="icon-btn-wrapper">
-                        <button class="icon-btn" id="mic-btn" onclick="toggleMic()" title="开关麦克风">🎤</button>
+                        <button class="icon-btn" id="mic-btn" onclick="toggleMic()" title="开关麦克风 (Ctrl+M)">🎤</button>
                         <div class="hover-volume-popup">
                             <span class="vol-label">麦克风输出增益</span>
                             <input type="range" id="mic-volume" min="0" max="2" step="0.1" value="1" oninput="changeMicGain(this.value)">
                         </div>
                     </div>
                     <div class="icon-btn-wrapper">
-                        <button class="icon-btn" id="speaker-btn" onclick="toggleSpeaker()" title="开关耳机收音">🎧</button>
+                        <button class="icon-btn" id="speaker-btn" onclick="toggleSpeaker()" title="开关扬声器 (Ctrl+D)">🎧</button>
                         <div class="hover-volume-popup">
                             <span class="vol-label">全局接收音量</span>
                             <input type="range" id="master-volume" min="0" max="1" step="0.05" value="1" oninput="changeMasterVolume(this.value)">
@@ -163,32 +83,30 @@
             </div>
         </nav>
 
+        <!-- ========== 主内容区 ========== -->
         <main class="main-content">
             <div class="top-bar">
+                <button class="hamburger-btn" onclick="toggleSidebar()" title="菜单 (Ctrl+B)">☰</button>
                 <span style="color:var(--text-muted); font-weight:bold; margin-right:10px;"># 频道</span>
-                
+
                 <div id="connect-area" style="display:flex; align-items:center; gap:8px;">
                     <input type="text" id="target-id" placeholder="👉 粘贴朋友 ID" onkeypress="if(event.key==='Enter') connectToMesh()">
                     <button class="btn-primary" onclick="connectToMesh()">连接入网</button>
                 </div>
 
                 <div id="room-status-area" style="display:none; align-items:center; gap:12px;">
-                    <div style="background:var(--success); color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;">
-                        🟢 频道活跃中
-                    </div>
-                    <div id="top-room-id" class="badge" onclick="copyRoomId()" style="cursor:pointer;" title="点击复制房间 ID">
-                        房间 ID: 读取中...
-                    </div>
+                    <div class="badge success">🟢 频道活跃中</div>
+                    <div id="top-room-id" class="badge" onclick="copyRoomId()" title="点击复制房间 ID">房间 ID: 读取中...</div>
                     <span style="font-size:0.9rem; color:var(--text-muted);">
                         在线节点: <span id="mesh-node-count" style="color:white; font-weight:bold;">1</span>
                     </span>
                     <button id="disconnect-btn" class="btn-danger" style="padding: 4px 10px; font-size: 0.85rem;" onclick="disconnectMesh()">断开</button>
                 </div>
 
-                <div style="flex:1"></div>
-                
-                <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2); margin: 0 8px;"></div>
-                <select id="video-quality" style="background:var(--bg-chat-input); color:white; border:none; padding:6px; border-radius:4px; outline:none; margin-right:8px;">
+                <div class="spacer"></div>
+
+                <div class="divider hide-mobile"></div>
+                <select id="video-quality" class="quality-select" style="margin-right:8px;">
                     <option value="auto">画质: 自动</option>
                     <option value="1080p60">1080p*60fps 高清</option>
                     <option value="1080p">1080p*30fps 高清</option>
@@ -203,30 +121,43 @@
                 <div class="video-wrapper" id="video-container" style="display:none;">
                     <video id="remote-video" autoplay playsinline controls></video>
                 </div>
-                
+
                 <div class="chat-area">
                     <div class="chat-history" id="chat-box">
-                        <div style="text-align: center; color: var(--text-muted); margin-top: 20px;">
+                        <div class="msg-system">
                             欢迎来到服务器。建立数据连接后即可开始聊天。
                         </div>
                     </div>
                     <div class="chat-input-wrapper">
-                        <span style="color: var(--text-muted); margin-right: 12px;">+</span>
+                        <span class="prefix">+</span>
                         <input type="text" id="chat-input" placeholder="发消息..." onkeypress="handleChatEnter(event)">
                     </div>
                 </div>
             </div>
-            
+
             <div id="audio-container" style="display:none;"></div>
         </main>
     </div>
 
+    <!-- 全局个人音量弹窗 -->
     <div id="personal-vol-popup">
         <span style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted);" id="personal-vol-name">调节音量</span>
         <input type="range" id="personal-vol-slider" min="0" max="1" step="0.05" value="1">
     </div>
 
+    <!-- 外部依赖 -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="main.js"></script>
+
+    <!-- 应用模块 (按依赖顺序加载) -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/peer.js"></script>
+    <script src="js/mesh.js"></script>
+    <script src="js/voice.js"></script>
+    <script src="js/screen.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/connection-diagnostics.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
