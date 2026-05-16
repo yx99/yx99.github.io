@@ -220,3 +220,26 @@
     display: flex;
     gap: var(--space-xs);
 }
+
+/* 侧边栏拖动分隔条 */
+.sidebar-resizer {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    flex-shrink: 0;
+    transition: background var(--transition-fast);
+    position: relative;
+    z-index: 20;
+}
+.sidebar-resizer:hover,
+.sidebar-resizer.active {
+    background: var(--primary);
+}
+.sidebar-resizer::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+}

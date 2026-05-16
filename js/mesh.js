@@ -14,8 +14,11 @@ const meshEvents = {
 };
 
 // 主动加入别人的房间
-function connectToMesh(targetId) {
-    if (!targetId || targetId === peer.id) return alert("无效的 ID");
+function connectToMesh() {
+    const targetId = document.getElementById('target-id').value.trim();
+    if (!targetId) return alert("请输入目标 ID");
+    if (!peer || !peer.id) return alert("信令服务器未连接，请稍后再试");
+    if (targetId === peer.id) return alert("不能连接自己的 ID");
     if (meshPeers[targetId]) return alert("已在网中");
 
     setHost(false);
