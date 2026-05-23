@@ -153,4 +153,5 @@
     color: var(--text-muted);
     font-family: 'Consolas', monospace;
 }
+.diag-value.dim,
 .diag-ip.dim { opacity: 0.5; }

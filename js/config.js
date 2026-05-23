@@ -26,16 +26,16 @@ const CONFIG = {
 
     // 语音处理参数
     VOICE: {
-        noiseGateThreshold: 0.01,    // 噪声门阈值 (0-1)
-        noiseGateHoldMs: 300,        // 噪声门保持时间
-        compressorThreshold: -30,    // 压缩器阈值 (dB)
-        compressorRatio: 3,          // 压缩比
-        compressorKnee: 10,          // 压缩拐点
-        attackMs: 5,                 // 攻击时间
-        releaseMs: 100,              // 释放时间
-        speakingThreshold: 0.02,     // 语音检测阈值
-        speakingHoldMs: 500,         // 语音检测保持时间
-        analyserFftSize: 256,        // 分析器 FFT 大小
+        noiseGateThreshold: 0.025,    // 噪声门阈值 (0-1)
+        noiseGateHoldMs: 220,        // 噪声门保持时间
+        compressorThreshold: -18,    // 压缩器阈值 (dB) — 仅压缩较大声音，避免背景噪声被放大
+        compressorRatio: 3,          // 压缩比 — 轻量压缩保留自然动态
+        compressorKnee: 12,           // 压缩拐点 — 更锐利的起效边界
+        attackMs: 8,                 // 攻击时间
+        releaseMs: 140,              // 释放时间
+        speakingThreshold: 0.035,    // 语音检测阈值
+        speakingHoldMs: 350,         // 语音检测保持时间
+        analyserFftSize: 512,        // 分析器 FFT 大小
         defaultMicGain: 1.0,         // 默认麦克风增益
         defaultMasterVolume: 1.0     // 默认主音量
     },

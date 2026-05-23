@@ -37,6 +37,20 @@
     .my-id {
         max-width: 60px;
     }
+
+    /* 平板: 缩小侧边栏字体，确保底栏可见 */
+    .user-bar {
+        height: 44px;
+        padding: 0 var(--space-xs);
+    }
+    .server-header {
+        height: 40px;
+        font-size: var(--font-size-md);
+    }
+    .diag-toggle-btn {
+        font-size: 0.7rem;
+        padding: 4px var(--space-sm);
+    }
 }
 
 /* ---- 手机: < 768px ---- */

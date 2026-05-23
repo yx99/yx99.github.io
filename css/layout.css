@@ -7,12 +7,14 @@
     padding: 0;
 }
 
+html, body {
+    height: 100%;
+}
 body {
     margin: 0;
     font-family: var(--font-family);
     background: var(--bg-main);
     color: var(--text-normal);
-    height: 100vh;
     overflow: hidden;
     display: flex;
 }

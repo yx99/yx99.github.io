@@ -77,7 +77,22 @@
                 const videoContainer = document.getElementById('video-container');
                 const remoteVideo = document.getElementById('remote-video');
                 if (videoContainer) videoContainer.style.display = 'flex';
-                if (remoteVideo) remoteVideo.srcObject = stream;
+                if (remoteVideo) {
+                    // 视频元素仅播放视频轨道，音频单独处理以保真
+                    const videoOnly = new MediaStream(stream.getVideoTracks());
+                    remoteVideo.srcObject = videoOnly;
+                }
+
+                // 音频轨道通过 AudioContext 回放，确保音色和响度清晰
+                const audioTracks = stream.getAudioTracks();
+                if (audioTracks.length > 0 && typeof setupScreenAudio === 'function') {
+                    setupScreenAudio(new MediaStream(audioTracks));
+                }
+
+                // 移动端/平板投屏手势控制 (亮度/音量)
+                if (typeof initScreenGestures === 'function') {
+                    initScreenGestures();
+                }
 
                 const hangupBtn = document.getElementById('hangup-btn');
                 if (hangupBtn) hangupBtn.style.display = 'inline-block';
@@ -85,7 +100,10 @@
                 const shareBtn = document.getElementById('share-btn');
                 if (shareBtn) { shareBtn.disabled = true; shareBtn.innerText = "观看中"; shareBtn.style.opacity = "0.5"; }
             });
-            call.on('close', hangUpScreen);
+            call.on('close', () => {
+                if (typeof teardownScreenAudio === 'function') teardownScreenAudio();
+                hangUpScreen();
+            });
         }
     };
 
