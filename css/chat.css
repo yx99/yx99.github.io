@@ -92,6 +92,15 @@
     font-size: var(--font-size-xl);
 }
 
+.file-add-btn {
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    user-select: none;
+}
+.file-add-btn:hover {
+    color: var(--primary);
+}
+
 .chat-input-wrapper input {
     background: transparent;
     border: none;

@@ -134,7 +134,8 @@
                         </div>
                     </div>
                     <div class="chat-input-wrapper">
-                        <span class="prefix">+</span>
+                        <span class="prefix file-add-btn" id="file-add-btn" title="发送文件" onclick="selectFileToSend()">+</span>
+                        <input type="file" id="file-input" style="display:none;" onchange="onFileInputChange(event)">
                         <input type="text" id="chat-input" placeholder="发消息..." onkeypress="handleChatEnter(event)">
                     </div>
                 </div>

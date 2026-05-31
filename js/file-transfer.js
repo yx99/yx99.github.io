@@ -34,6 +34,25 @@ function initFileDropZone() {
     });
 }
 
+function selectFileToSend() {
+    const peerIds = Object.keys(meshPeers);
+    if (peerIds.length === 0) {
+        alert('没有可发送的对端，请先建立连接。');
+        return;
+    }
+    const input = document.getElementById('file-input');
+    if (input) input.click();
+}
+
+function onFileInputChange(e) {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+        for (const f of files) promptSendFile(f);
+    }
+    // 清除以便重复选择同名文件
+    e.target.value = '';
+}
+
 function promptSendFile(file) {
     const peerIds = Object.keys(meshPeers);
     if (peerIds.length === 0) {

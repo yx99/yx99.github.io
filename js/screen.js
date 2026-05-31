@@ -6,6 +6,8 @@ let outgoingScreenCalls = [];
 let incomingScreenCall = null;
 let currentScreenQuality = 'auto';
 let screenQualityLabel = 'auto';
+let screenVideoSenders = {};  // { peerId: RTCRtpSender }
+let screenQualityMonitor = null;
 
 async function toggleShare() {
     if (currentScreenStream) return stopSharing();
@@ -32,21 +34,28 @@ async function toggleShare() {
 
         // 向所有节点广播
         outgoingScreenCalls = [];
+        screenVideoSenders = {};
         Object.keys(meshPeers).forEach(pid => {
             const c = peer.call(pid, stream, { metadata: { type: 'screen', quality: currentScreenQuality, qualityLabel: screenQualityLabel } });
             outgoingScreenCalls.push(c);
-            // 轮询获取 PC 用于诊断
+            // 轮询获取 PC 用于诊断 + 追踪 video sender
             let att = 0;
             const iv = setInterval(() => {
                 att++;
                 if (c.peerConnection && typeof trackPeerConnection === 'function') {
                     clearInterval(iv);
                     trackPeerConnection(pid, c.peerConnection);
+                    // 追踪 video sender 用于动态画质调节
+                    const senders = c.peerConnection.getSenders();
+                    const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+                    if (videoSender) screenVideoSenders[pid] = videoSender;
                 } else if (att > 20) {
                     clearInterval(iv);
                 }
             }, 300);
         });
+
+        if (currentScreenQuality === 'auto') startScreenQualityMonitor();
 
         stream.getVideoTracks().forEach(track => {
             track.onended = stopSharing;
@@ -57,12 +66,14 @@ async function toggleShare() {
 }
 
 function stopSharing() {
+    stopScreenQualityMonitor();
     if (currentScreenStream) {
         currentScreenStream.getTracks().forEach(t => t.stop());
         currentScreenStream = null;
     }
     outgoingScreenCalls.forEach(c => { try { c.close(); } catch (e) {} });
     outgoingScreenCalls = [];
+    screenVideoSenders = {};
 
     const shareBtn = document.getElementById('share-btn');
     if (shareBtn) {
@@ -88,6 +99,10 @@ function hangUpScreen() {
     }
     const qBadge = document.getElementById('screen-quality-badge');
     if (qBadge) qBadge.style.display = 'none';
+
+    // 恢复画质选择器显示（接收方结束观看后）
+    const qSelect = document.getElementById('video-quality');
+    if (qSelect) qSelect.style.display = '';
 
     const hangupBtn = document.getElementById('hangup-btn');
     if (hangupBtn) hangupBtn.style.display = 'none';
@@ -235,4 +250,119 @@ function onScreenGestureEnd(e) {
             screenGestureIndicator.style.opacity = '0';
         }
     }, 600);
+}
+
+// ==========================================
+// 动态画质调节 (auto 模式)
+// ==========================================
+function startScreenQualityMonitor() {
+    if (screenQualityMonitor) return;
+    screenQualityMonitor = setInterval(() => {
+        applyDynamicQuality();
+    }, 5000);
+}
+
+function stopScreenQualityMonitor() {
+    if (screenQualityMonitor) {
+        clearInterval(screenQualityMonitor);
+        screenQualityMonitor = null;
+    }
+}
+
+// 监听画质选择器变化 — 热生效（分享中即时切换）
+function initQualitySelector() {
+    const sel = document.getElementById('video-quality');
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+        currentScreenQuality = sel.value;
+        screenQualityLabel = sel.selectedOptions[0]?.text || sel.value;
+
+        if (currentScreenQuality === 'auto') {
+            // 切换到自动模式：启动动态调节
+            startScreenQualityMonitor();
+            applyDynamicQuality();
+        } else {
+            // 切换到固定画质：停止自动调节，即时应用
+            stopScreenQualityMonitor();
+            const preset = CONFIG.VIDEO_QUALITY[currentScreenQuality] || CONFIG.VIDEO_QUALITY['auto'];
+            applyFixedQuality(preset);
+        }
+        debugLog('screen', '画质热切换→', screenQualityLabel);
+    });
+}
+
+// 将固定画质预设应用到所有 video sender
+function applyFixedQuality(preset) {
+    const senderIds = Object.keys(screenVideoSenders);
+    senderIds.forEach(pid => {
+        const sender = screenVideoSenders[pid];
+        if (!sender || !sender.track || sender.track.readyState === 'ended') {
+            delete screenVideoSenders[pid];
+            return;
+        }
+        // 根据分辨率预设估算 maxBitrate
+        const maxH = preset.height?.max || preset.height?.ideal || 1080;
+        let maxBitrate;
+        if (maxH >= 1080) maxBitrate = 4000000;
+        else if (maxH >= 720) maxBitrate = 2000000;
+        else maxBitrate = 800000;
+        try {
+            const params = sender.getParameters();
+            if (!params.encodings) params.encodings = [{}];
+            params.encodings[0].maxBitrate = maxBitrate;
+            delete params.encodings[0].scaleResolutionDownBy;
+            sender.setParameters(params).catch(() => {});
+        } catch (e) { /* 忽略 */ }
+    });
+}
+
+function applyDynamicQuality() {
+    if (currentScreenQuality !== 'auto') return;
+    const senderIds = Object.keys(screenVideoSenders);
+    if (senderIds.length === 0) return;
+
+    senderIds.forEach(pid => {
+        const sender = screenVideoSenders[pid];
+        if (!sender || !sender.track || sender.track.readyState === 'ended') {
+            delete screenVideoSenders[pid];
+            return;
+        }
+
+        const diag = typeof peerDiagData !== 'undefined' ? peerDiagData[pid] : null;
+        const level = evalNetworkLevel(diag);
+        const prevLevel = sender._qualityLevel || 'good';
+        if (level === prevLevel) return;
+        sender._qualityLevel = level;
+
+        const maxBitrate = { good: 4000000, medium: 1500000, poor: 500000 }[level];
+        try {
+            const params = sender.getParameters();
+            if (!params.encodings) params.encodings = [{}];
+            params.encodings[0].maxBitrate = maxBitrate;
+            params.encodings[0].scaleResolutionDownBy = { good: 1, medium: 1.5, poor: 2 }[level];
+            sender.setParameters(params).catch(() => {
+                // setParameters 可能因编码器不支持而失败，静默降级
+            });
+            if (level !== 'good') {
+                debugLog('screen', '动态画质调整:', pid, '→', level, 'maxBitrate', (maxBitrate / 1000) + 'kbps');
+            }
+        } catch (e) {
+            // 忽略
+        }
+    });
+}
+
+function evalNetworkLevel(diag) {
+    if (!diag) return 'good';
+    const rtt = diag.rtt ? parseInt(diag.rtt) : null;
+    const isRelay = diag.connectionType === 'relay';
+    const lost = diag.audioPacketsLost || 0;
+
+    if (isRelay && rtt && rtt > 200) return 'poor';
+    if (isRelay && rtt && rtt > 100) return 'medium';
+    if (rtt && rtt > 300) return 'poor';
+    if (rtt && rtt > 150) return 'medium';
+    if (lost > 50) return 'poor';
+    if (lost > 10) return 'medium';
+    return 'good';
 }

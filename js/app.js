@@ -128,6 +128,10 @@
 
                 const shareBtn = document.getElementById('share-btn');
                 if (shareBtn) { shareBtn.disabled = true; shareBtn.innerText = "观看中"; shareBtn.style.opacity = "0.5"; }
+
+                // 接收方：隐藏画质选择器，只显示画质角标
+                const qSelect = document.getElementById('video-quality');
+                if (qSelect) qSelect.style.display = 'none';
             });
             call.on('close', () => {
                 hangUpScreen();
@@ -154,6 +158,9 @@
 
     // 3. 启动 PeerJS
     initPeerSystem();
+
+    // 4. 初始化画质选择器热切换
+    if (typeof initQualitySelector === 'function') initQualitySelector();
 
     debugLog('app', '应用初始化完成');
 })();

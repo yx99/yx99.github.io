@@ -100,13 +100,19 @@ function setupDataConn(conn) {
                         debugLog('mesh', 'hello 触发晚进房投屏推送→', data.name);
                         const sc = peer.call(conn.peer, currentScreenStream, { metadata: { type: 'screen', quality: currentScreenQuality || 'auto', qualityLabel: screenQualityLabel || 'auto' } });
                         if (typeof outgoingScreenCalls !== 'undefined') outgoingScreenCalls.push(sc);
-                        // 轮询 PC 用于诊断
+                        // 轮询 PC 用于诊断 + 追踪 video sender
                         let att = 0;
                         const iv = setInterval(() => {
                             att++;
                             if (sc.peerConnection && typeof trackPeerConnection === 'function') {
                                 clearInterval(iv);
                                 trackPeerConnection(conn.peer, sc.peerConnection);
+                                // 追踪 video sender 用于动态画质
+                                if (typeof screenVideoSenders !== 'undefined') {
+                                    const senders = sc.peerConnection.getSenders();
+                                    const vs = senders.find(s => s.track && s.track.kind === 'video');
+                                    if (vs) screenVideoSenders[conn.peer] = vs;
+                                }
                             } else if (att > 20) clearInterval(iv);
                         }, 300);
                     }

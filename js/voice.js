@@ -336,7 +336,7 @@ function setupRemoteAudioUI(peerId, peerName, stream) {
     // 绕过浏览器 autoplay 限制
     audio.play().catch(e => debugLog('voice', 'audio.play() 被浏览器阻止:', peerId, e.name));
 
-    userVolumes[peerId] = 1.0;
+    userVolumes[peerId] = 0.5;  // 默认 50%，与主音量滑块初始位置一致
     applyAllVolumes();
 
     // 远端音频分析器
