@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // app.js — 应用入口，模块初始化与事件绑定
 // ==========================================
 
@@ -22,12 +22,17 @@
     peerEvents.onConnection = function (conn) {
         setupDataConn(conn);
 
-        // 获取底层 RTCPeerConnection 用于诊断
-        setTimeout(() => {
+        // 轮询获取底层 RTCPeerConnection 用于诊断
+        let attempts = 0;
+        const pollInterval = setInterval(() => {
+            attempts++;
             if (conn.peerConnection) {
+                clearInterval(pollInterval);
                 trackPeerConnection(conn.peer, conn.peerConnection);
+            } else if (attempts > 20) {
+                clearInterval(pollInterval);
             }
-        }, 500);
+        }, 300);
     };
 
     peerEvents.onCall = function (call) {
@@ -55,6 +60,10 @@
             call.on('stream', stream => {
                 debugLog('app', '语音来电收到流←', call.peer);
                 setupRemoteAudioUI(call.peer, callerName, stream);
+                // PC 在 answer 后就绪，此时可获取用于诊断
+                if (call.peerConnection) {
+                    trackPeerConnection(call.peer, call.peerConnection);
+                }
             });
             call.on('close', () => {
                 debugLog('app', '语音来电关闭:', call.peer);
@@ -65,11 +74,7 @@
                 removeRemoteAudioUI(call.peer);
             });
 
-            // 诊断跟踪
-            if (call.peerConnection) {
-                trackPeerConnection(call.peer, call.peerConnection);
-            }
-        } else {
+            } else {
             // 投屏接入
             incomingScreenCall = call;
             call.answer();
@@ -78,20 +83,19 @@
                 const remoteVideo = document.getElementById('remote-video');
                 if (videoContainer) videoContainer.style.display = 'flex';
                 if (remoteVideo) {
-                    // 视频元素仅播放视频轨道，音频单独处理以保真
-                    const videoOnly = new MediaStream(stream.getVideoTracks());
-                    remoteVideo.srcObject = videoOnly;
-                }
-
-                // 音频轨道通过 AudioContext 回放，确保音色和响度清晰
-                const audioTracks = stream.getAudioTracks();
-                if (audioTracks.length > 0 && typeof setupScreenAudio === 'function') {
-                    setupScreenAudio(new MediaStream(audioTracks));
+                    remoteVideo.srcObject = stream;
+                    remoteVideo.playsInline = true;
+                    remoteVideo.play().catch(() => {});
                 }
 
                 // 移动端/平板投屏手势控制 (亮度/音量)
                 if (typeof initScreenGestures === 'function') {
                     initScreenGestures();
+                }
+
+                // 连接诊断跟踪
+                if (call.peerConnection && typeof trackPeerConnection === 'function') {
+                    trackPeerConnection(call.peer, call.peerConnection);
                 }
 
                 const hangupBtn = document.getElementById('hangup-btn');
@@ -101,7 +105,6 @@
                 if (shareBtn) { shareBtn.disabled = true; shareBtn.innerText = "观看中"; shareBtn.style.opacity = "0.5"; }
             });
             call.on('close', () => {
-                if (typeof teardownScreenAudio === 'function') teardownScreenAudio();
                 hangUpScreen();
             });
         }

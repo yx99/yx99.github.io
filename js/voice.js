@@ -232,6 +232,9 @@ function callVoice(targetId, targetName) {
     call.on('stream', stream => {
         debugLog('voice', 'callVoice 收到流←', targetName || targetId);
         setupRemoteAudioUI(targetId, targetName, stream);
+        if (call.peerConnection && typeof trackPeerConnection === 'function') {
+            trackPeerConnection(targetId, call.peerConnection);
+        }
     });
     call.on('close', () => {
         debugLog('voice', 'callVoice 通话关闭:', targetName || targetId);

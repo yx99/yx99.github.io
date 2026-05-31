@@ -73,6 +73,7 @@ async function initConnectionDiagnostics() {
 // ==========================================
 function trackPeerConnection(peerId, pc) {
     if (!pc) return;
+    if (peerDiagData[peerId] && peerDiagData[peerId]._tracked) return;
 
     if (!peerDiagData[peerId]) {
         peerDiagData[peerId] = {
@@ -83,6 +84,7 @@ function trackPeerConnection(peerId, pc) {
             rtt: null
         };
     }
+    peerDiagData[peerId]._tracked = true;
 
     const diag = peerDiagData[peerId];
 

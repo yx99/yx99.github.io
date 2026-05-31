@@ -10,12 +10,12 @@
     flex-shrink: 0;
     position: relative;
     z-index: 10;
-    overflow: hidden;
 }
 
 /* 诊断面板区 — 始终固定在频道列表下方 */
 .diag-section {
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 .server-header {
@@ -54,7 +54,7 @@
 /* 频道列表 */
 .channel-list {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden auto;
     padding: var(--space-md) var(--space-sm);
 }
 

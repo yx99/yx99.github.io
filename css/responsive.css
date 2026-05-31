@@ -9,12 +9,18 @@
     }
 
     .top-bar input[type="text"] {
-        width: 150px;
+        width: 120px;
     }
 
     .top-bar {
         gap: 6px;
         padding: 0 var(--space-sm);
+        height: auto;
+        min-height: 48px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
 
     .btn-primary,
@@ -22,10 +28,12 @@
     .btn-outline {
         padding: 4px 10px;
         font-size: 0.8rem;
+        white-space: nowrap;
     }
 
     .video-wrapper {
-        max-height: 40%;
+        max-height: 45%;
+        min-height: 200px;
     }
 
     .content-body {
@@ -88,12 +96,16 @@
         display: flex;
     }
 
-    /* 顶栏折行 */
+    /* 顶栏: 横向滚动 */
     .top-bar {
         height: auto;
         min-height: 48px;
         padding: var(--space-sm);
         gap: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
 
     .top-bar input[type="text"] {
@@ -192,7 +204,7 @@
     }
 
     .top-bar input[type="text"] {
-        width: 100px;
+        width: 80px;
     }
 
     .top-bar .badge {
@@ -205,5 +217,9 @@
     .btn-outline {
         padding: 4px 6px;
         font-size: 0.7rem;
+    }
+
+    .video-wrapper {
+        min-height: 150px;
     }
 }

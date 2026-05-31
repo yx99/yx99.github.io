@@ -29,7 +29,19 @@ async function toggleShare() {
         // 向所有节点广播
         outgoingScreenCalls = [];
         Object.keys(meshPeers).forEach(pid => {
-            outgoingScreenCalls.push(peer.call(pid, stream, { metadata: { type: 'screen' } }));
+            const c = peer.call(pid, stream, { metadata: { type: 'screen' } });
+            outgoingScreenCalls.push(c);
+            // 轮询获取 PC 用于诊断
+            let att = 0;
+            const iv = setInterval(() => {
+                att++;
+                if (c.peerConnection && typeof trackPeerConnection === 'function') {
+                    clearInterval(iv);
+                    trackPeerConnection(pid, c.peerConnection);
+                } else if (att > 20) {
+                    clearInterval(iv);
+                }
+            }, 300);
         });
 
         stream.getVideoTracks()[0].onended = stopSharing;
@@ -59,7 +71,6 @@ function hangUpScreen() {
         try { incomingScreenCall.close(); } catch (e) {}
         incomingScreenCall = null;
     }
-    teardownScreenAudio();
     teardownScreenGestures();
 
     const videoContainer = document.getElementById('video-container');
@@ -168,7 +179,8 @@ function onScreenGestureStart(e) {
     screenGestureState.active = true;
     screenGestureState.side = isLeft ? 'left' : 'right';
     screenGestureState.startY = touch.clientY;
-    screenGestureState.startValue = isLeft ? screenBrightness : (screenAudioGain ? screenAudioGain.gain.value : 1);
+    const rv0 = document.getElementById('remote-video');
+    screenGestureState.startValue = isLeft ? screenBrightness : (rv0 ? rv0.volume : 1);
     screenGestureState.currentValue = screenGestureState.startValue;
 }
 
@@ -192,7 +204,8 @@ function onScreenGestureMove(e) {
             screenBrightnessOverlay.style.backgroundColor = `rgba(0,0,0,${(1 - newValue) * 0.85})`;
         }
     } else {
-        if (screenAudioGain) screenAudioGain.gain.value = newValue;
+        const rv = document.getElementById('remote-video');
+        if (rv) rv.volume = newValue;
     }
 
     if (screenGestureIndicator) {
