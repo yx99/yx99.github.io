@@ -103,3 +103,78 @@
 .chat-input-wrapper input::placeholder {
     color: var(--text-muted);
 }
+
+/* 文件拖拽提示 */
+.chat-area.drag-over::after {
+    content: '📁 松开以发送文件';
+    position: absolute;
+    inset: 0;
+    background: rgba(88, 101, 242, 0.15);
+    border: 2px dashed var(--primary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--primary);
+    font-weight: bold;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* 文件消息 */
+.msg-file {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-chat-input);
+    border-radius: var(--radius-md);
+    margin: var(--space-xs) 0;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.msg-file .file-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.msg-file .file-info {
+    flex: 1;
+    min-width: 150px;
+    color: var(--text-normal);
+}
+
+.msg-file .file-info b {
+    color: var(--text-white);
+}
+
+.msg-file .file-status {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+.msg-file .file-status.sending { color: var(--primary); }
+.msg-file .file-status.done    { color: var(--success); }
+.msg-file .file-status.declined { color: var(--danger); }
+.msg-file .file-status.error   { color: var(--danger); }
+
+.msg-file .file-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-mini {
+    padding: 3px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+}
+.btn-mini.accept  { background: var(--success); color: #fff; }
+.btn-mini.decline { background: var(--danger); color: #fff; }
+.btn-mini.accept:hover  { opacity: 0.85; }
+.btn-mini.decline:hover { opacity: 0.85; }

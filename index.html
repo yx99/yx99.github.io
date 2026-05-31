@@ -76,7 +76,7 @@
                         <button class="icon-btn" id="speaker-btn" onclick="toggleSpeaker()" title="开关扬声器 (Ctrl+D)">🎧</button>
                         <div class="hover-volume-popup">
                             <span class="vol-label">全局接收音量</span>
-                            <input type="range" id="master-volume" min="0" max="1" step="0.05" value="1" oninput="changeMasterVolume(this.value)">
+                            <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5" oninput="changeMasterVolume(this.value)">
                         </div>
                     </div>
                 </div>
@@ -124,6 +124,7 @@
             <div class="content-body">
                 <div class="video-wrapper" id="video-container" style="display:none;">
                     <video id="remote-video" autoplay playsinline controls></video>
+                    <div id="screen-quality-badge" class="screen-quality-badge" style="display:none;"></div>
                 </div>
 
                 <div class="chat-area">
@@ -160,6 +161,7 @@
     <script src="js/voice.js"></script>
     <script src="js/screen.js"></script>
     <script src="js/chat.js"></script>
+    <script src="js/file-transfer.js"></script>
     <script src="js/connection-diagnostics.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>

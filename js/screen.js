@@ -4,12 +4,16 @@
 let currentScreenStream = null;
 let outgoingScreenCalls = [];
 let incomingScreenCall = null;
+let currentScreenQuality = 'auto';
+let screenQualityLabel = 'auto';
 
 async function toggleShare() {
     if (currentScreenStream) return stopSharing();
     if (Object.keys(meshPeers).length === 0) return alert("网络中没有其他人！");
 
     const quality = document.getElementById('video-quality')?.value || 'auto';
+    currentScreenQuality = quality;
+    screenQualityLabel = document.getElementById('video-quality')?.selectedOptions?.[0]?.text || quality;
     const preset = CONFIG.VIDEO_QUALITY[quality] || CONFIG.VIDEO_QUALITY['auto'];
     const constraints = {
         video: { ...preset, cursor: "always" },
@@ -29,7 +33,7 @@ async function toggleShare() {
         // 向所有节点广播
         outgoingScreenCalls = [];
         Object.keys(meshPeers).forEach(pid => {
-            const c = peer.call(pid, stream, { metadata: { type: 'screen' } });
+            const c = peer.call(pid, stream, { metadata: { type: 'screen', quality: currentScreenQuality, qualityLabel: screenQualityLabel } });
             outgoingScreenCalls.push(c);
             // 轮询获取 PC 用于诊断
             let att = 0;
@@ -44,7 +48,9 @@ async function toggleShare() {
             }, 300);
         });
 
-        stream.getVideoTracks()[0].onended = stopSharing;
+        stream.getVideoTracks().forEach(track => {
+            track.onended = stopSharing;
+        });
     } catch (err) {
         if (err.name !== 'NotAllowedError') alert("屏幕捕获失败");
     }
@@ -76,7 +82,12 @@ function hangUpScreen() {
     const videoContainer = document.getElementById('video-container');
     const remoteVideo = document.getElementById('remote-video');
     if (videoContainer) videoContainer.style.display = 'none';
-    if (remoteVideo) remoteVideo.srcObject = null;
+    if (remoteVideo) {
+        if (remoteVideo._resCheck) { clearInterval(remoteVideo._resCheck); remoteVideo._resCheck = null; }
+        remoteVideo.srcObject = null;
+    }
+    const qBadge = document.getElementById('screen-quality-badge');
+    if (qBadge) qBadge.style.display = 'none';
 
     const hangupBtn = document.getElementById('hangup-btn');
     if (hangupBtn) hangupBtn.style.display = 'none';

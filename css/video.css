@@ -48,6 +48,22 @@
     opacity: 1;
 }
 
+/* 屏幕画质标签 */
+.screen-quality-badge {
+    position: absolute;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+}
+
 /* 投屏手势控制 (移动端/平板) */
 #screen-brightness-overlay {
     position: absolute;

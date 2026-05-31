@@ -15,7 +15,7 @@ let compressorNode = null;
 let analyserNode = null;
 let isMicOn = true;
 let isSpeakerOn = true;
-let masterVolume = 1.0;
+let masterVolume = CONFIG.VOICE.defaultMasterVolume;
 let userVolumes = {};
 
 // 语音活动检测状态
@@ -178,6 +178,14 @@ async function toggleVoiceRoom() {
                     autoGainControl: { ideal: true },
                     channelCount: { ideal: 1 }
                 }
+            });
+            // 监听麦克风被拔出/设备切换
+            rawAudioStream.getAudioTracks().forEach(track => {
+                track.onended = () => {
+                    debugLog('voice', '麦克风音轨意外终止 (设备拔出?)');
+                    showToast('麦克风已断开', 'warning');
+                    if (inVoiceRoom) toggleVoiceRoom();
+                };
             });
             debugLog('voice', '麦克风已获取, 音轨数=', rawAudioStream.getAudioTracks().length);
 

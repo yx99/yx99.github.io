@@ -36,8 +36,8 @@ const CONFIG = {
         speakingThreshold: 0.035,    // 语音检测阈值
         speakingHoldMs: 350,         // 语音检测保持时间
         analyserFftSize: 512,        // 分析器 FFT 大小
-        defaultMicGain: 1.0,         // 默认麦克风增益
-        defaultMasterVolume: 1.0     // 默认主音量
+        defaultMicGain: 1.0,         // 默认麦克风增益 (0-2 滑块的中间值)
+        defaultMasterVolume: 0.5     // 默认主音量 (0-1 滑块的中间值)
     },
 
     // 视频画质预设

@@ -81,7 +81,10 @@ function trackPeerConnection(peerId, pc) {
             connectionType: 'unknown',
             localIp: null,
             remoteIp: null,
-            rtt: null
+            rtt: null,
+            codec: null,
+            audioBitrate: null,
+            audioPacketsLost: 0
         };
     }
     peerDiagData[peerId]._tracked = true;
@@ -92,6 +95,20 @@ function trackPeerConnection(peerId, pc) {
         diag.iceState = pc.iceConnectionState;
         renderDiagnostics();
         updateConnectionQualityIcon(peerId);
+        // 连接失败后延迟清理 (给 transient 断连 8s 恢复时间)
+        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+            setTimeout(() => {
+                if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                    debugLog('diag', 'ICE 连接失败, 清理', peerId);
+                    if (meshPeers[peerId]?.voiceCall) {
+                        try { meshPeers[peerId].voiceCall.close(); } catch (e) {}
+                        meshPeers[peerId].voiceCall = null;
+                    }
+                    if (typeof removeRemoteAudioUI === 'function') removeRemoteAudioUI(peerId);
+                    renderDiagnostics();
+                }
+            }, 8000);
+        }
     };
 
     // 周期性获取 stats — 仅关注 nominated 的对以确保准确
@@ -139,6 +156,20 @@ function trackPeerConnection(peerId, pc) {
                 if (localCand && localCand.ip) diag.localIp = localCand.ip;
                 if (remoteCand && remoteCand.ip) diag.remoteIp = remoteCand.ip;
             }
+
+            // 提取编解码器和音频性能
+            let codecMap = {};
+            stats.forEach(report => {
+                if (report.type === 'codec' && report.mimeType) {
+                    codecMap[report.id] = report.mimeType;
+                }
+                if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+                    const codecMime = codecMap[report.codecId] || '';
+                    diag.codec = codecMime.replace('audio/', '') || diag.codec;
+                    if (report.bitrateMean) diag.audioBitrate = Math.round(report.bitrateMean / 1000);
+                    diag.audioPacketsLost = report.packetsLost || 0;
+                }
+            });
 
             renderDiagnostics();
             updateConnectionQualityIcon(peerId);
@@ -263,6 +294,18 @@ function renderPeerDiagEntry(peerId, name, diag) {
         ipInfo = '<span class="diag-ip dim">等待连接...</span>';
     }
 
+    // 语音编解码性能
+    let voicePerf = '';
+    if (diag?.codec) {
+        voicePerf += `<span class="diag-ip">${escapeHtml(diag.codec)}</span>`;
+    }
+    if (diag?.audioBitrate) {
+        voicePerf += `<span class="diag-ip">${diag.audioBitrate}kbps</span>`;
+    }
+    if (diag?.audioPacketsLost > 0) {
+        voicePerf += `<span class="diag-ip" style="color:var(--warning)">丢包${diag.audioPacketsLost}</span>`;
+    }
+
     return `<div class="diag-peer">
         <div class="diag-peer-top">
             <span class="diag-peer-status ${statusCls}">${statusIcon}</span>
@@ -270,7 +313,7 @@ function renderPeerDiagEntry(peerId, name, diag) {
             ${rttInfo}
             ${connInfo}
         </div>
-        <div class="diag-peer-info">${ipInfo}</div>
+        <div class="diag-peer-info">${ipInfo}${voicePerf}</div>
     </div>`;
 }
 

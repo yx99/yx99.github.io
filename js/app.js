@@ -86,6 +86,31 @@
                     remoteVideo.srcObject = stream;
                     remoteVideo.playsInline = true;
                     remoteVideo.play().catch(() => {});
+                    // 监测实际分辨率
+                    remoteVideo.onloadedmetadata = () => {
+                        const qBadge = document.getElementById('screen-quality-badge');
+                        const qLabel = call.metadata?.qualityLabel || call.metadata?.quality || '';
+                        if (qBadge && qLabel) {
+                            qBadge.textContent = qLabel;
+                            qBadge.style.display = 'block';
+                        }
+                    };
+                    // 定时检测分辨率变化
+                    let lastW = 0, lastH = 0;
+                    const resCheck = setInterval(() => {
+                        if (!remoteVideo.srcObject) { clearInterval(resCheck); return; }
+                        const w = remoteVideo.videoWidth, h = remoteVideo.videoHeight;
+                        if (w && h && (w !== lastW || h !== lastH)) {
+                            lastW = w; lastH = h;
+                            const qBadge = document.getElementById('screen-quality-badge');
+                            const qLabel = call.metadata?.qualityLabel || call.metadata?.quality || '投屏';
+                            if (qBadge) {
+                                qBadge.textContent = `${qLabel} | ${w}x${h}`;
+                                qBadge.style.display = 'block';
+                            }
+                        }
+                    }, 2000);
+                    remoteVideo._resCheck = resCheck;
                 }
 
                 // 移动端/平板投屏手势控制 (亮度/音量)

@@ -44,8 +44,17 @@ function initPeerSystem() {
     });
 
     peer.on('open', id => {
+        const prevId = myFullId;
         myFullId = id;
-        currentRoomId = id;
+        // 重连后 ID 变更说明旧连接已失效
+        if (prevId && prevId !== id) {
+            debugLog('peer', '重连后 ID 变更:', prevId, '→', id);
+            executeDisconnect();
+            currentRoomId = id;
+            if (typeof updateMyIdentityUI === 'function') updateMyIdentityUI();
+            if (typeof updateTopBarStatus === 'function') updateTopBarStatus();
+        }
+        if (!prevId) currentRoomId = id;
         debugLog('peer', '信令已连接, ID:', id);
         if (peerEvents.onOpen) peerEvents.onOpen(id);
     });

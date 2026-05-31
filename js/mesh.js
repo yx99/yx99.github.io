@@ -94,6 +94,22 @@ function setupDataConn(conn) {
                         debugLog('mesh', 'hello 触发晚进房语音呼叫→', data.name);
                         if (typeof callVoice === 'function') callVoice(conn.peer, data.name);
                     }
+
+                    // 若正在投屏，自动推送给新节点（晚进房投屏）
+                    if (typeof currentScreenStream !== 'undefined' && currentScreenStream) {
+                        debugLog('mesh', 'hello 触发晚进房投屏推送→', data.name);
+                        const sc = peer.call(conn.peer, currentScreenStream, { metadata: { type: 'screen', quality: currentScreenQuality || 'auto', qualityLabel: screenQualityLabel || 'auto' } });
+                        if (typeof outgoingScreenCalls !== 'undefined') outgoingScreenCalls.push(sc);
+                        // 轮询 PC 用于诊断
+                        let att = 0;
+                        const iv = setInterval(() => {
+                            att++;
+                            if (sc.peerConnection && typeof trackPeerConnection === 'function') {
+                                clearInterval(iv);
+                                trackPeerConnection(conn.peer, sc.peerConnection);
+                            } else if (att > 20) clearInterval(iv);
+                        }, 300);
+                    }
                 }
                 break;
             }
@@ -130,6 +146,24 @@ function setupDataConn(conn) {
                 if (meshEvents.onRoomDisband) meshEvents.onRoomDisband();
                 executeDisconnect();
                 break;
+            // 文件传输
+            case 'file-offer':
+                if (typeof handleFileOffer === 'function') handleFileOffer(data, conn);
+                break;
+            case 'file-accept':
+            case 'file-decline':
+            case 'file-chunk':
+            case 'file-done':
+            case 'file-ack':
+                // 由 file-transfer.js 的 per-conn handler 处理
+                break;
+            // 连接存活检测
+            case '_ping':
+                conn.send({ type: '_pong', t: data.t });
+                break;
+            case '_pong':
+                handlePong(conn.peer);
+                break;
         }
     });
 
@@ -147,9 +181,36 @@ function setupDataConn(conn) {
 }
 
 function broadcastData(data) {
-    Object.values(meshPeers).forEach(p => {
-        if (p.dataConn && p.dataConn.open) p.dataConn.send(data);
+    Object.entries(meshPeers).forEach(([pid, p]) => {
+        if (p.dataConn && p.dataConn.open) {
+            try { p.dataConn.send(data); } catch (e) {
+                debugLog('mesh', 'broadcastData 发送失败→', pid, e);
+            }
+        }
     });
+}
+
+// DataConnection 存活检测 — 每 15s ping 一次，30s 无响应视为断开
+const PING_INTERVAL = 15000;
+const PING_TIMEOUT = 30000;
+setInterval(() => {
+    Object.keys(meshPeers).forEach(pid => {
+        const p = meshPeers[pid];
+        if (!p.dataConn || !p.dataConn.open) return;
+        const now = Date.now();
+        // 检查上次 pong 时间
+        if (p._lastPong && now - p._lastPong > PING_TIMEOUT) {
+            debugLog('mesh', 'DataConnection 心跳超时, 断开:', pid);
+            p.dataConn.close();
+            return;
+        }
+        // 发送 ping
+        p.dataConn.send({ type: '_ping', t: now });
+    });
+}, PING_INTERVAL);
+
+function handlePong(peerId) {
+    if (meshPeers[peerId]) meshPeers[peerId]._lastPong = Date.now();
 }
 
 function getMeshPeers() { return meshPeers; }
