@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>抓小猫 - Sundogs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>抓小猫 - 休息一下</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/zhbink/CatchThatCat@master/catch-the-cat.js"></script>
     <style>
@@ -11,30 +11,42 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            height: 100vh; 
+            height: 100vh; /* 撑满可视高度 */
             margin: 0; 
             background-color: #eeeeee; 
+            overflow: hidden; /* 防止出现多余的滚动条 */
         }
+        
         #catch-the-cat { 
             width: 100%; 
-            max-width: 600px; 
+            max-width: 600px; /* 电脑端最大宽度限制 */
             text-align: center; 
+            padding: 15px; /* 给四周留一点呼吸空间 */
+            box-sizing: border-box;
+        }
+
+        /* 关键 2：强制 Phaser 生成的 canvas 元素自适应容器 */
+        #catch-the-cat canvas {
+            max-width: 100%;
+            height: auto !important; /* 保持宽高比例缩小 */
+            object-fit: contain;
+            border-radius: 12px; /* 顺手加个圆角 */
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* 顺手加个悬浮阴影，看起来更高级 */
         }
     </style>
 </head>
 <body>
     <div id="catch-the-cat"></div>
     <script>
-        // 使用正确的类名 CatchTheCatGame 进行初始化
         window.game = new CatchTheCatGame({
-            w: 11, // 网格宽度
-            h: 11, // 网格高度
-            r: 20, // 圆圈半径
-            initialWallCount: 8, // 初始随机障碍物的数量
-            backgroundColor: 0xeeeeee, // 背景色 (需要与 body 背景色一致)
-            parent: 'catch-the-cat', // 绑定的 div id
+            w: 11,
+            h: 11,
+            r: 20,
+            initialWallCount: 8,
+            backgroundColor: 0xeeeeee, 
+            parent: 'catch-the-cat',
             statusBarAlign: 'center',
-            credit: 'sundogs.site' // 底部版权文字，已改成你的网站名
+            credit: 'sundogs.site' 
         });
     </script>
 </body>
