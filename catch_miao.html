@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抓小猫 - Sundogs</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/zhbink/CatchThatCat@master/catch-the-cat.js"></script>
+    <style>
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background-color: #eeeeee; 
+        }
+        #catch-the-cat { 
+            width: 100%; 
+            max-width: 600px; 
+            text-align: center; 
+        }
+    </style>
+</head>
+<body>
+    <div id="catch-the-cat"></div>
+    <script>
+        // 使用正确的类名 CatchTheCatGame 进行初始化
+        window.game = new CatchTheCatGame({
+            w: 11, // 网格宽度
+            h: 11, // 网格高度
+            r: 20, // 圆圈半径
+            initialWallCount: 8, // 初始随机障碍物的数量
+            backgroundColor: 0xeeeeee, // 背景色 (需要与 body 背景色一致)
+            parent: 'catch-the-cat', // 绑定的 div id
+            statusBarAlign: 'center',
+            credit: 'sundogs.site' // 底部版权文字，已改成你的网站名
+        });
+    </script>
+</body>
+</html>
